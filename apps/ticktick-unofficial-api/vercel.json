@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "bunVersion": "1.x",
+  "crons": [
+    {
+      "path": "/api/internal/cron/session-refresh",
+      "schedule": "*/30 * * * *"
+    }
+  ]
+}

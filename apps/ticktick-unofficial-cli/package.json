@@ -1,0 +1,36 @@
+{
+  "name": "ticktick-unofficial-cli",
+  "version": "0.1.0",
+  "description": "Bun CLI for TickTick built with Crust and ticktick-unofficial.",
+  "module": "src/index.ts",
+  "type": "module",
+  "private": true,
+  "bin": {
+    "ticktick-unofficial-cli": "./dist/ticktick-unofficial-cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "bun build ./src/cli.ts --target bun --outfile ./dist/ticktick-unofficial-cli.js",
+    "compile": "bun run ./scripts/compile.ts",
+    "dev": "bun run src/cli.ts",
+    "start": "bun run src/cli.ts",
+    "verify:live": "bun run ./scripts/live-verify.ts",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@crustjs/core": "^0.0.15",
+    "@crustjs/plugins": "^0.0.20",
+    "@crustjs/prompts": "^0.0.10",
+    "@crustjs/store": "^0.0.4",
+    "@crustjs/style": "^0.0.6",
+    "ticktick-unofficial": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5"
+  },
+  "peerDependencies": {}
+}
