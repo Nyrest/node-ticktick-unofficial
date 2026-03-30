@@ -7,6 +7,10 @@ import type { AppConfig } from "./lib/config";
 import {
   ColumnSchema,
   CompletedTasksQuerySchema,
+  CountdownBatchRequestSchema,
+  CountdownBatchResponseSchema,
+  CountdownDraftSchema,
+  CountdownSchema,
   DateRangeParamsSchema,
   ErrorSchema,
   FocusActionSchema,
@@ -54,6 +58,7 @@ const UnknownRecord = t.Record(t.String(), t.Any());
 const TaskDraftInputSchema = t.Union([TaskDraftSchema, t.Array(TaskDraftSchema)]);
 const TaskMutationSchema = t.Union([TaskSchema, t.Array(TaskSchema)]);
 const TaskStatusInputSchema = t.Union([TaskStatusMutationSchema, t.Array(TaskStatusMutationSchema)]);
+const CountdownMutationSchema = t.Union([CountdownSchema, t.Array(CountdownSchema)]);
 const DeleteManySchema = t.Object({
   ids: t.Array(t.String(), { minItems: 1 }),
 });
@@ -90,6 +95,7 @@ export function createApp(
             { name: "User", description: "TickTick account profile data." },
             { name: "Projects", description: "Project and column management." },
             { name: "Tasks", description: "Task sync, CRUD, status changes, and trash access." },
+            { name: "Countdowns", description: "Countdown, anniversary, birthday, and holiday management." },
             { name: "Habits", description: "Habit CRUD, exports, and check-in workflows." },
             { name: "Focus", description: "Pomodoro, focus timeline, and focus operations." },
             { name: "Statistics", description: "General, ranking, and task statistics." },
@@ -579,6 +585,112 @@ export function createApp(
         detail: protectedDetail(config, "Tasks", "Soft-delete multiple tasks", "Marks multiple tasks as deleted."),
         response: {
           200: t.Array(TaskSchema),
+          401: ErrorSchema,
+        },
+      },
+    )
+    .get(
+      "/countdowns",
+      async function listCountdowns() {
+        return (await ticktick.getClient()).countdowns.list();
+      },
+      {
+        detail: protectedDetail(config, "Countdowns", "List countdowns", "Returns the full Countdown list."),
+        response: {
+          200: t.Array(CountdownSchema),
+          401: ErrorSchema,
+        },
+      },
+    )
+    .get(
+      "/countdowns/:countdownId",
+      async function getCountdownById({ params }) {
+        return (await ticktick.getClient()).countdowns.getById(params.countdownId);
+      },
+      {
+        params: t.Object({
+          countdownId: t.String(),
+        }),
+        detail: protectedDetail(config, "Countdowns", "Get countdown by id", "Looks up a single countdown by its id."),
+        response: {
+          200: t.Union([CountdownSchema, t.Null()]),
+          401: ErrorSchema,
+        },
+      },
+    )
+    .post(
+      "/countdowns",
+      async function createCountdown({ body }) {
+        return (await ticktick.getClient()).countdowns.create(body as never);
+      },
+      {
+        body: CountdownDraftSchema,
+        detail: protectedDetail(config, "Countdowns", "Create countdown", "Creates a new countdown."),
+        response: {
+          200: CountdownBatchResponseSchema,
+          401: ErrorSchema,
+        },
+      },
+    )
+    .post(
+      "/countdowns/batch",
+      async function batchCountdowns({ body }) {
+        return (await ticktick.getClient()).countdowns.batch(body as never);
+      },
+      {
+        body: CountdownBatchRequestSchema,
+        detail: protectedDetail(
+          config,
+          "Countdowns",
+          "Batch mutate countdowns",
+          "Submits add, update, or delete Countdown mutations.",
+        ),
+        response: {
+          200: CountdownBatchResponseSchema,
+          401: ErrorSchema,
+        },
+      },
+    )
+    .put(
+      "/countdowns",
+      async function updateCountdowns({ body }) {
+        return (await ticktick.getClient()).countdowns.update(body as never);
+      },
+      {
+        body: CountdownMutationSchema,
+        detail: protectedDetail(config, "Countdowns", "Update countdowns", "Updates one or more countdowns."),
+        response: {
+          200: CountdownBatchResponseSchema,
+          401: ErrorSchema,
+        },
+      },
+    )
+    .delete(
+      "/countdowns/:countdownId",
+      async function deleteCountdown({ params }) {
+        return (await ticktick.getClient()).countdowns.delete(params.countdownId);
+      },
+      {
+        params: t.Object({
+          countdownId: t.String(),
+        }),
+        detail: protectedDetail(config, "Countdowns", "Delete countdown", "Deletes a countdown by id."),
+        response: {
+          200: CountdownBatchResponseSchema,
+          401: ErrorSchema,
+        },
+      },
+    )
+    .post(
+      "/countdowns/delete",
+      async function deleteManyCountdowns({ body }) {
+        return (await ticktick.getClient()).countdowns.delete(body.ids);
+      },
+      {
+        body: DeleteManySchema,
+        detail: protectedDetail(config, "Countdowns", "Delete multiple countdowns", "Deletes multiple countdowns."),
+        response: {
+          200: CountdownBatchResponseSchema,
           401: ErrorSchema,
         },
       },

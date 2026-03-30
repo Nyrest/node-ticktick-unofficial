@@ -257,6 +257,16 @@ Cloudflare Worker note:
 - `DELETE /api/tasks/:taskId`
 - `POST /api/tasks/delete`
 
+### Countdowns
+
+- `GET /api/countdowns`
+- `GET /api/countdowns/:countdownId`
+- `POST /api/countdowns`
+- `POST /api/countdowns/batch`
+- `PUT /api/countdowns`
+- `DELETE /api/countdowns/:countdownId`
+- `POST /api/countdowns/delete`
+
 ### Habits
 
 - `GET /api/habits`

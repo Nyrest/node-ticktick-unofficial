@@ -8,11 +8,15 @@ import { confirm, input, password, select, spinner } from "@crustjs/prompts";
 import { helpPlugin, renderHelp } from "@crustjs/plugins";
 import {
   TickTickHabitCheckinStatusInputHelp,
+  TickTickCountdownDayCalculationModeInputHelp,
+  TickTickCountdownDaysOptionInputHelp,
+  TickTickCountdownTimerModeInputHelp,
+  TickTickCountdownTypeInputHelp,
   TickTickTaskPriorityInputHelp,
   TickTickTaskStatuses,
   TickTickTaskStatusInputHelp,
 } from "ticktick-unofficial";
-import type { TickTickClient, TickTickHabit, TickTickTask } from "ticktick-unofficial";
+import type { TickTickClient, TickTickCountdown, TickTickHabit, TickTickTask } from "ticktick-unofficial";
 
 import {
   APP_NAME,
@@ -25,12 +29,21 @@ import {
   logout,
   parseDateInput,
   formatHabitCheckinStatusLabel,
+  formatCountdownDayCalculationModeLabel,
+  formatCountdownDaysOptionLabel,
+  formatCountdownTimerModeLabel,
+  formatCountdownTypeLabel,
   parseHabitCheckinStatus,
+  parseCountdownDayCalculationMode,
+  parseCountdownDaysOption,
+  parseCountdownTimerMode,
+  parseCountdownType,
   parsePriority,
   parseTaskStatus,
   pickHabits,
   pickTaskCollection,
   requireClient,
+  resolveCountdown,
   resolveDateRange,
   resolveHabit,
   resolveProject,
@@ -54,6 +67,8 @@ import {
   formatFocusStatus,
   printOutput,
   renderHabitTable,
+  renderCountdownDetails,
+  renderCountdownTable,
   renderProjectDetails,
   renderProjectTable,
   renderStatistics,
@@ -160,6 +175,19 @@ function parseSortOrder(input: string | undefined): SortOrder {
 
 function looksLikeTaskId(input: string): boolean {
   return /^[a-f0-9]{24}$/i.test(input.trim());
+}
+
+function parseCommaSeparatedStrings(input: string | undefined): string[] | undefined {
+  if (!input) {
+    return undefined;
+  }
+
+  const values = input
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+
+  return values.length > 0 ? values : undefined;
 }
 
 function readApiErrorCode(error: unknown): string | undefined {
@@ -1917,6 +1945,371 @@ function createHabitCommand() {
     );
 }
 
+function createCountdownCommand() {
+  return new Crust("countdown")
+    .flags(rootFlags)
+    .meta({
+      description: "Manage countdowns, anniversaries, birthdays, and holidays",
+    })
+    .command(
+      "list",
+      (command) =>
+        command
+          .meta({
+            description: "List countdowns",
+          })
+          .flags({
+            ...rootFlags,
+            search: {
+              type: "string",
+              description: "Filter countdowns by name",
+            },
+          } as const)
+          .run(
+            withRuntime(async ({ flags }, runtime) => {
+              const client = await requireClient(runtime);
+              const countdowns = await client.countdowns.list();
+              const search = flags.search?.trim().toLowerCase();
+              const filtered = search
+                ? countdowns.filter((countdown) => countdown.name.toLowerCase().includes(search))
+                : countdowns;
+
+              printOutput(
+                runtime,
+                {
+                  countdowns: filtered,
+                  ok: true,
+                },
+                () => renderCountdownTable(filtered),
+              );
+            }),
+          ),
+    )
+    .command(
+      "show",
+      (command) =>
+        command
+          .meta({
+            description: "Show one countdown by id or name",
+          })
+          .args([{ name: "countdown", type: "string", required: true }] as const)
+          .run(
+            withRuntime(async ({ args }, runtime) => {
+              const client = await requireClient(runtime);
+              const countdown = resolveCountdown(await client.countdowns.list(), args.countdown);
+
+              printOutput(
+                runtime,
+                {
+                  countdown,
+                  ok: true,
+                },
+                () => renderCountdownDetails(countdown),
+              );
+            }),
+          ),
+    )
+    .command(
+      "add",
+      (command) =>
+        command
+          .meta({
+            description: "Create a countdown",
+          })
+          .flags({
+            ...rootFlags,
+            type: {
+              type: "string",
+              default: "countdown",
+              description: `Countdown type: ${TickTickCountdownTypeInputHelp}`,
+            },
+            date: {
+              type: "string",
+              description: "Countdown date",
+            },
+            "ignore-year": {
+              type: "boolean",
+              default: false,
+              description: "Ignore the year part of the date",
+            },
+            repeat: {
+              type: "string",
+              description: "Repeat rule",
+            },
+            reminder: {
+              type: "string",
+              description: "Comma-separated reminder triggers",
+            },
+            "timer-mode": {
+              type: "string",
+              description: `Counting mode: ${TickTickCountdownTimerModeInputHelp}`,
+            },
+            "day-calculation-mode": {
+              type: "string",
+              description: `Day calculation mode: ${TickTickCountdownDayCalculationModeInputHelp}`,
+            },
+            "show-age": {
+              type: "boolean",
+              default: false,
+              description: "Show age on birthdays",
+            },
+            "days-option": {
+              type: "string",
+              description: `Smart List visibility: ${TickTickCountdownDaysOptionInputHelp}`,
+            },
+            style: {
+              type: "string",
+              description: "Countdown style",
+            },
+            "style-color": {
+              type: "string",
+              description: "Comma-separated style colors",
+            },
+            remark: {
+              type: "string",
+              description: "Countdown note/remark",
+            },
+            "icon-res": {
+              type: "string",
+              description: "Icon resource id",
+            },
+            color: {
+              type: "string",
+              description: "Primary color",
+            },
+          } as const)
+          .args([{ name: "name", type: "string", variadic: true }] as const)
+          .run(
+            withRuntime(async ({ args, flags }, runtime) => {
+              const client = await requireClient(runtime);
+              const name = ensureValue(joinWords(args.name), "Countdown name");
+              const result = await client.countdowns.create({
+                name,
+                type: flags.type ?? "countdown",
+                date: flags.date ?? undefined,
+                ignoreYear: flags["ignore-year"] ?? false,
+                repeatFlag: flags.repeat ?? null,
+                reminders: parseCommaSeparatedStrings(flags.reminder ?? undefined),
+                timerMode: flags["timer-mode"] ?? undefined,
+                dayCalculationMode: flags["day-calculation-mode"] ?? undefined,
+                showAge: flags["show-age"] ?? false,
+                daysOption: flags["days-option"] ?? undefined,
+                style: flags.style ?? undefined,
+                styleColor: parseCommaSeparatedStrings(flags["style-color"] ?? undefined),
+                remark: flags.remark ?? undefined,
+                iconRes: flags["icon-res"] ?? undefined,
+                color: flags.color ?? undefined,
+              });
+
+              const countdownId = Object.keys(result.id2etag ?? {})[0];
+              const countdowns = await client.countdowns.list();
+              const countdown = countdownId ? countdowns.find((entry) => entry.id === countdownId) ?? null : null;
+
+              printOutput(
+                runtime,
+                {
+                  countdown,
+                  ok: true,
+                  result,
+                },
+                () => (countdown ? `Created countdown ${countdown.name} (${countdown.id}).` : `Created countdown ${name}.`),
+              );
+            }),
+          ),
+    )
+    .command(
+      "update",
+      (command) =>
+        command
+          .meta({
+            description: "Update one countdown",
+          })
+          .flags({
+            ...rootFlags,
+            name: {
+              type: "string",
+              description: "Rename the countdown",
+            },
+            type: {
+              type: "string",
+              description: `Countdown type: ${TickTickCountdownTypeInputHelp}`,
+            },
+            date: {
+              type: "string",
+              description: "Countdown date",
+            },
+            "ignore-year": {
+              type: "boolean",
+              description: "Ignore the year part of the date",
+            },
+            repeat: {
+              type: "string",
+              description: "Repeat rule",
+            },
+            reminder: {
+              type: "string",
+              description: "Comma-separated reminder triggers",
+            },
+            "timer-mode": {
+              type: "string",
+              description: `Counting mode: ${TickTickCountdownTimerModeInputHelp}`,
+            },
+            "day-calculation-mode": {
+              type: "string",
+              description: `Day calculation mode: ${TickTickCountdownDayCalculationModeInputHelp}`,
+            },
+            "show-age": {
+              type: "boolean",
+              description: "Show age on birthdays",
+            },
+            "days-option": {
+              type: "string",
+              description: `Smart List visibility: ${TickTickCountdownDaysOptionInputHelp}`,
+            },
+            style: {
+              type: "string",
+              description: "Countdown style",
+            },
+            "style-color": {
+              type: "string",
+              description: "Comma-separated style colors",
+            },
+            remark: {
+              type: "string",
+              description: "Countdown note/remark",
+            },
+            "icon-res": {
+              type: "string",
+              description: "Icon resource id",
+            },
+            color: {
+              type: "string",
+              description: "Primary color",
+            },
+          } as const)
+          .args([{ name: "countdown", type: "string", required: true }] as const)
+          .run(
+            withRuntime(async ({ args, flags }, runtime) => {
+              const client = await requireClient(runtime);
+              const current = resolveCountdown(await client.countdowns.list(), args.countdown);
+              const date = flags.date ? Number(toDayKey(parseDateInput(flags.date)!)) : current.date;
+
+              const updated: TickTickCountdown = {
+                ...current,
+                ...(flags.name ? { name: flags.name } : null),
+                ...(flags.type ? { type: parseCountdownType(flags.type) ?? current.type } : null),
+                date,
+                ...(flags["ignore-year"] != null ? { ignoreYear: flags["ignore-year"] } : null),
+                ...(flags.repeat !== undefined ? { repeatFlag: flags.repeat || null } : null),
+                ...(flags.reminder !== undefined ? { reminders: parseCommaSeparatedStrings(flags.reminder) ?? [] } : null),
+                ...(flags["timer-mode"] ? { timerMode: parseCountdownTimerMode(flags["timer-mode"]) ?? current.timerMode } : null),
+                ...(flags["day-calculation-mode"]
+                  ? {
+                      dayCalculationMode:
+                        parseCountdownDayCalculationMode(flags["day-calculation-mode"]) ??
+                        flags["day-calculation-mode"],
+                    }
+                  : null),
+                ...(flags["show-age"] != null ? { showAge: flags["show-age"] } : null),
+                ...(flags["days-option"]
+                  ? { daysOption: parseCountdownDaysOption(flags["days-option"]) ?? current.daysOption }
+                  : null),
+                ...(flags.style !== undefined ? { style: flags.style } : null),
+                ...(flags["style-color"] !== undefined ? { styleColor: parseCommaSeparatedStrings(flags["style-color"]) ?? [] } : null),
+                ...(flags.remark !== undefined ? { remark: flags.remark } : null),
+                ...(flags["icon-res"] !== undefined ? { iconRes: flags["icon-res"] } : null),
+                ...(flags.color !== undefined ? { color: flags.color } : null),
+              };
+
+              const result = await client.countdowns.update(updated);
+              const countdown = (await client.countdowns.getById(current.id)) ?? updated;
+
+              printOutput(
+                runtime,
+                {
+                  countdown,
+                  ok: true,
+                  result,
+                },
+                () => `Updated countdown ${countdown.name} (${countdown.id}).`,
+              );
+            }),
+          ),
+    )
+    .command(
+      "delete",
+      (command) =>
+        command
+          .meta({
+            description: "Delete one or more countdowns",
+          })
+          .flags({
+            ...rootFlags,
+            y: {
+              type: "boolean",
+              description: "Skip confirmation",
+            },
+          } as const)
+          .args([{ name: "countdowns", type: "string", required: true, variadic: true }] as const)
+          .run(
+            withRuntime(async ({ args, flags }, runtime) => {
+              const client = await requireClient(runtime);
+              await requireConfirmation(flags.y ?? false, "Use -y to delete countdowns without a prompt.");
+
+              const countdowns = await client.countdowns.list();
+              const selected = args.countdowns.map((reference) => resolveCountdown(countdowns, reference));
+              const result = await client.countdowns.delete(selected.map((countdown) => countdown.id));
+
+              printOutput(
+                runtime,
+                {
+                  countdowns: selected,
+                  ok: true,
+                  result,
+                },
+                () => `Deleted ${selected.length} countdown${selected.length === 1 ? "" : "s"}.`,
+              );
+            }),
+          ),
+    )
+    .command(
+      "rm",
+      (command) =>
+        command
+          .meta({
+            description: "Alias for countdown delete",
+          })
+          .flags({
+            ...rootFlags,
+            y: {
+              type: "boolean",
+              description: "Skip confirmation",
+            },
+          } as const)
+          .args([{ name: "countdowns", type: "string", required: true, variadic: true }] as const)
+          .run(
+            withRuntime(async ({ args, flags }, runtime) => {
+              const client = await requireClient(runtime);
+              await requireConfirmation(flags.y ?? false, "Use -y to delete countdowns without a prompt.");
+
+              const countdowns = await client.countdowns.list();
+              const selected = args.countdowns.map((reference) => resolveCountdown(countdowns, reference));
+              const result = await client.countdowns.delete(selected.map((countdown) => countdown.id));
+
+              printOutput(
+                runtime,
+                {
+                  countdowns: selected,
+                  ok: true,
+                  result,
+                },
+                () => `Deleted ${selected.length} countdown${selected.length === 1 ? "" : "s"}.`,
+              );
+            }),
+          ),
+    );
+}
+
 cli = new Crust(APP_NAME)
   .meta({
     description: "Human-friendly and automation-friendly CLI for TickTick using ticktick-unofficial.",
@@ -1931,6 +2324,7 @@ cli = new Crust(APP_NAME)
   .command(createTaskCommand())
   .command(createFocusCommand())
   .command(createStatisticsCommand())
+  .command(createCountdownCommand())
   .command(createHabitCommand());
 
 if (process.argv.includes("--version") || process.argv.includes("-v")) {

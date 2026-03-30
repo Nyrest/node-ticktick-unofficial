@@ -1,4 +1,12 @@
 import type {
+  TickTickCountdownDayCalculationMode,
+  TickTickCountdownDayCalculationModeInput,
+  TickTickCountdownDaysOption,
+  TickTickCountdownDaysOptionInput,
+  TickTickCountdownTimerMode,
+  TickTickCountdownTimerModeInput,
+  TickTickCountdownType,
+  TickTickCountdownTypeInput,
   TickTickHabitCheckinStatus,
   TickTickHabitCheckinStatusInput,
   TickTickHabitStatus,
@@ -96,6 +104,86 @@ export interface TickTickUserProfile {
   username?: string;
   inboxId?: string;
   [key: string]: unknown;
+}
+
+export interface TickTickCountdown {
+  id: string;
+  type: TickTickCountdownType;
+  iconRes?: string;
+  color?: string;
+  name: string;
+  date: number;
+  ignoreYear?: boolean;
+  typeOfSmartList?: number;
+  showCalendarType?: number;
+  reminders?: string[];
+  annoyingAlert?: unknown;
+  repeatFlag?: string | null;
+  remark?: string;
+  status?: number;
+  deleted?: number;
+  sortOrder?: number;
+  background?: string | null;
+  style?: string;
+  styleColor?: string[];
+  dateDisplayFormat?: string;
+  createdTime?: string;
+  modifiedTime?: string;
+  pinnedTime?: string | null;
+  etag?: string;
+  archivedTime?: string | null;
+  timerMode?: TickTickCountdownTimerMode;
+  showAge?: boolean;
+  daysOption?: TickTickCountdownDaysOption;
+  showRemark?: boolean | null;
+  preSet?: unknown;
+  [key: string]: unknown;
+}
+
+export interface TickTickCountdownBatchRequest {
+  add?: TickTickCountdown[];
+  update?: TickTickCountdown[];
+  delete?: string[];
+}
+
+export interface TickTickCountdownBatchResponse {
+  id2etag?: Record<string, string>;
+  id2error?: Record<string, unknown>;
+  [key: string]: unknown;
+}
+
+export interface TickTickCountdownDraft {
+  name: string;
+  id?: string;
+  type?: TickTickCountdownTypeInput | string | number;
+  iconRes?: string;
+  color?: string;
+  date?: number | Date | string;
+  ignoreYear?: boolean;
+  typeOfSmartList?: number;
+  showCalendarType?: number;
+  reminders?: string[];
+  annoyingAlert?: unknown;
+  repeatFlag?: string | null;
+  remark?: string;
+  status?: number;
+  deleted?: number;
+  sortOrder?: number;
+  background?: string | null;
+  style?: string;
+  styleColor?: string[];
+  dateDisplayFormat?: string;
+  createdTime?: string;
+  modifiedTime?: string;
+  pinnedTime?: string | null;
+  etag?: string;
+  archivedTime?: string | null;
+  timerMode?: TickTickCountdownTimerModeInput | string | number;
+  dayCalculationMode?: TickTickCountdownDayCalculationModeInput | string | number;
+  showAge?: boolean;
+  daysOption?: TickTickCountdownDaysOptionInput | string | number;
+  showRemark?: boolean | null;
+  preSet?: unknown;
 }
 
 export interface TickTickTaskReminder {

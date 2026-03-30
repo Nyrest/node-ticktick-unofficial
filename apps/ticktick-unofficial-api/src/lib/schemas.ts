@@ -362,6 +362,93 @@ export const HabitCheckinUpsertSchema = t.Object({
   date: t.Optional(t.Union([t.String(), t.Number()])),
 });
 
+export const CountdownSchema = t.Object(
+  {
+    id: t.String(),
+    type: t.Number(),
+    iconRes: t.Optional(t.String()),
+    color: t.Optional(t.String()),
+    name: t.String(),
+    date: t.Number(),
+    ignoreYear: t.Optional(t.Boolean()),
+    typeOfSmartList: t.Optional(t.Number()),
+    showCalendarType: t.Optional(t.Number()),
+    reminders: t.Optional(t.Array(t.String())),
+    annoyingAlert: t.Optional(t.Any()),
+    repeatFlag: t.Optional(t.Union([t.String(), t.Null()])),
+    remark: t.Optional(t.String()),
+    status: t.Optional(t.Number()),
+    deleted: t.Optional(t.Number()),
+    sortOrder: t.Optional(t.Number()),
+    background: t.Optional(t.Union([t.String(), t.Null()])),
+    style: t.Optional(t.String()),
+    styleColor: t.Optional(t.Array(t.String())),
+    dateDisplayFormat: t.Optional(t.String()),
+    createdTime: t.Optional(t.String()),
+    modifiedTime: t.Optional(t.String()),
+    pinnedTime: t.Optional(NullableString),
+    etag: t.Optional(t.String()),
+    archivedTime: t.Optional(NullableString),
+    timerMode: t.Optional(t.Number()),
+    showAge: t.Optional(t.Boolean()),
+    daysOption: t.Optional(t.Number()),
+    showRemark: t.Optional(t.Union([t.Boolean(), t.Null()])),
+    preSet: t.Optional(t.Any()),
+  },
+  { additionalProperties: true },
+);
+
+export const CountdownDraftSchema = t.Object(
+  {
+    name: t.String(),
+    id: t.Optional(t.String()),
+    type: t.Optional(t.Union([t.String(), t.Number()])),
+    iconRes: t.Optional(t.String()),
+    color: t.Optional(t.String()),
+    date: t.Optional(t.Union([t.String(), t.Number()])),
+    ignoreYear: t.Optional(t.Boolean()),
+    typeOfSmartList: t.Optional(t.Number()),
+    showCalendarType: t.Optional(t.Number()),
+    reminders: t.Optional(t.Array(t.String())),
+    annoyingAlert: t.Optional(t.Any()),
+    repeatFlag: t.Optional(t.Union([t.String(), t.Null()])),
+    remark: t.Optional(t.String()),
+    status: t.Optional(t.Number()),
+    deleted: t.Optional(t.Number()),
+    sortOrder: t.Optional(t.Number()),
+    background: t.Optional(t.Union([t.String(), t.Null()])),
+    style: t.Optional(t.String()),
+    styleColor: t.Optional(t.Array(t.String())),
+    dateDisplayFormat: t.Optional(t.String()),
+    createdTime: t.Optional(t.String()),
+    modifiedTime: t.Optional(t.String()),
+    pinnedTime: t.Optional(t.Union([t.String(), t.Null()])),
+    etag: t.Optional(t.String()),
+    archivedTime: t.Optional(t.Union([t.String(), t.Null()])),
+    timerMode: t.Optional(t.Union([t.String(), t.Number()])),
+    dayCalculationMode: t.Optional(t.Union([t.String(), t.Number()])),
+    showAge: t.Optional(t.Boolean()),
+    daysOption: t.Optional(t.Union([t.String(), t.Number()])),
+    showRemark: t.Optional(t.Union([t.Boolean(), t.Null()])),
+    preSet: t.Optional(t.Any()),
+  },
+  { additionalProperties: true },
+);
+
+export const CountdownBatchRequestSchema = t.Object({
+  add: t.Optional(t.Array(CountdownSchema)),
+  update: t.Optional(t.Array(CountdownSchema)),
+  delete: t.Optional(t.Array(t.String())),
+});
+
+export const CountdownBatchResponseSchema = t.Object(
+  {
+    id2etag: t.Optional(t.Record(t.String(), t.String())),
+    id2error: t.Optional(UnknownRecord),
+  },
+  { additionalProperties: true },
+);
+
 export const FocusOverviewSchema = t.Object(
   {
     todayPomoCount: t.Number(),

@@ -7,7 +7,7 @@ Designed for server runtimes only:
 - Bun 1.1+
 - Next.js / Nuxt / Elysia / plain server processes
 
-It uses the underlying web endpoints instead of TickTick's public API, so it can reach tasks sync data, habits, focus statistics and operations, private rankings/statistics, and other web-only flows.
+It uses the underlying web endpoints instead of TickTick's public API, so it can reach tasks sync data, countdowns and anniversaries, habits, focus statistics and operations, private rankings/statistics, and other web-only flows.
 
 ## Install
 
@@ -73,6 +73,12 @@ Implemented modules:
 - `client.user.getProfile()`
 - `client.projects.list()`
 - `client.projects.listColumns()`
+- `client.countdowns.list()`
+- `client.countdowns.getById()`
+- `client.countdowns.batch()`
+- `client.countdowns.create()`
+- `client.countdowns.update()`
+- `client.countdowns.delete()`
 - `client.tasks.getAll()`
 - `client.tasks.list()`
 - `client.tasks.getById()`
@@ -115,6 +121,7 @@ Implemented modules:
 
 Note:
 - TickTick currently rate limits `/api/v2/data/export/habits` and may return `export_too_many_times`. That affects `client.habits.export()` and raw `client.requestBuffer()` calls made against the same endpoint.
+- Countdown support also relies on private web endpoints, currently `GET /api/v2/countdown/list` and `POST /api/v2/countdown/batch`, so upstream web changes may require library updates.
 
 ## Development
 

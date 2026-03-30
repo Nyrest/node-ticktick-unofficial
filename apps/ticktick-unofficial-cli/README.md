@@ -133,6 +133,16 @@ ticktick-unofficial-cli task remove -y "Write release notes"
 ticktick-unofficial-cli task rm -y 69c804788c81d3c48d928dff
 ```
 
+### Countdowns
+
+```bash
+ticktick-unofficial-cli countdown list
+ticktick-unofficial-cli countdown show "Weekend"
+ticktick-unofficial-cli countdown add "Exam" --date 2026-03-30 --type countdown
+ticktick-unofficial-cli countdown update "Exam" --style fullscreen_image --remark "Bring pens"
+ticktick-unofficial-cli countdown delete -y "Exam"
+```
+
 ### Focus
 
 ```bash

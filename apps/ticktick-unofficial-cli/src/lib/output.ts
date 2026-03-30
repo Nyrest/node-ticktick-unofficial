@@ -1,5 +1,6 @@
 import { table } from "@crustjs/style";
 import type {
+  TickTickCountdown,
   TickTickGeneralStatistics,
   TickTickHabit,
   TickTickProjectProfile,
@@ -7,7 +8,14 @@ import type {
   TickTickTask,
   TickTickTaskStatisticsEntry,
 } from "ticktick-unofficial";
-import { formatTickTickHabitStatus, formatTickTickTaskPriority, formatTickTickTaskStatus } from "ticktick-unofficial";
+import {
+  formatTickTickCountdownDaysOption,
+  formatTickTickCountdownTimerMode,
+  formatTickTickCountdownType,
+  formatTickTickHabitStatus,
+  formatTickTickTaskPriority,
+  formatTickTickTaskStatus,
+} from "ticktick-unofficial";
 
 import { parseApiDate, shortId, type RuntimeContext } from "./app.ts";
 
@@ -116,6 +124,37 @@ export function renderHabitTable(habits: TickTickHabit[]): string {
   ]);
 
   return table(["ID", "Name", "State", "Goal", "Unit", "Type"], rows);
+}
+
+export function renderCountdownTable(countdowns: TickTickCountdown[]): string {
+  const rows = countdowns.map((countdown) => [
+    shortId(countdown.id),
+    countdown.name,
+    formatTickTickCountdownType(countdown.type),
+    String(countdown.date),
+    formatTickTickCountdownTimerMode(countdown.timerMode),
+    formatTickTickCountdownDaysOption(countdown.daysOption),
+  ]);
+
+  return table(["ID", "Name", "Type", "Date", "Mode", "Smart List"], rows);
+}
+
+export function renderCountdownDetails(countdown: TickTickCountdown): string {
+  return [
+    `ID: ${countdown.id}`,
+    `Name: ${countdown.name}`,
+    `Type: ${formatTickTickCountdownType(countdown.type)}`,
+    `Date: ${countdown.date}`,
+    `Ignore year: ${countdown.ignoreYear ? "yes" : "no"}`,
+    `Timer mode: ${formatTickTickCountdownTimerMode(countdown.timerMode)}`,
+    `Smart List: ${formatTickTickCountdownDaysOption(countdown.daysOption)}`,
+    `Repeat: ${countdown.repeatFlag ?? "-"}`,
+    `Style: ${countdown.style ?? "-"}`,
+    `Style colors: ${countdown.styleColor?.join(", ") || "-"}`,
+    `Icon: ${countdown.iconRes ?? "-"}`,
+    `Color: ${countdown.color ?? "-"}`,
+    `Remark: ${countdown.remark || "-"}`,
+  ].join("\n");
 }
 
 export function renderStatistics(

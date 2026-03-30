@@ -3,7 +3,20 @@ import { isAbsolute, join } from "node:path";
 import { configDir, createStore, stateDir } from "@crustjs/store";
 import { createStyle, type StyleInstance } from "@crustjs/style";
 import {
+  formatTickTickCountdownDayCalculationMode,
+  formatTickTickCountdownDaysOption,
+  formatTickTickCountdownTimerMode,
+  formatTickTickCountdownType,
+  parseTickTickCountdownDayCalculationMode,
+  parseTickTickCountdownDaysOption,
+  parseTickTickCountdownTimerMode,
+  parseTickTickCountdownType,
   TickTickClient,
+  type TickTickCountdown,
+  type TickTickCountdownDayCalculationMode,
+  type TickTickCountdownDaysOption,
+  type TickTickCountdownTimerMode,
+  type TickTickCountdownType,
   TickTickTaskStatuses,
   createFileSessionStore,
   formatTickTickHabitCheckinStatus,
@@ -302,6 +315,56 @@ export function formatHabitCheckinStatusLabel(value: number | undefined): string
   return formatTickTickHabitCheckinStatus(value);
 }
 
+export function parseCountdownType(input: string | number | undefined): TickTickCountdownType | undefined {
+  try {
+    return parseTickTickCountdownType(input);
+  } catch (error) {
+    rethrowCliError(error);
+  }
+}
+
+export function parseCountdownTimerMode(input: string | number | undefined): TickTickCountdownTimerMode | undefined {
+  try {
+    return parseTickTickCountdownTimerMode(input);
+  } catch (error) {
+    rethrowCliError(error);
+  }
+}
+
+export function parseCountdownDayCalculationMode(
+  input: string | number | undefined,
+): TickTickCountdownDayCalculationMode | undefined {
+  try {
+    return parseTickTickCountdownDayCalculationMode(input);
+  } catch (error) {
+    rethrowCliError(error);
+  }
+}
+
+export function parseCountdownDaysOption(input: string | number | undefined): TickTickCountdownDaysOption | undefined {
+  try {
+    return parseTickTickCountdownDaysOption(input);
+  } catch (error) {
+    rethrowCliError(error);
+  }
+}
+
+export function formatCountdownTypeLabel(value: number | undefined): string {
+  return formatTickTickCountdownType(value);
+}
+
+export function formatCountdownTimerModeLabel(value: number | undefined): string {
+  return formatTickTickCountdownTimerMode(value);
+}
+
+export function formatCountdownDayCalculationModeLabel(value: number | undefined): string {
+  return formatTickTickCountdownDayCalculationMode(value);
+}
+
+export function formatCountdownDaysOptionLabel(value: number | undefined): string {
+  return formatTickTickCountdownDaysOption(value);
+}
+
 function normalizeLabel(value: unknown): string {
   return typeof value === "string" ? value.trim().toLowerCase() : "";
 }
@@ -362,6 +425,27 @@ export function resolveTask(tasks: TickTickTask[], reference: string): TickTickT
   }
 
   throw new CliError(`Task "${reference}" was not found.`);
+}
+
+export function resolveCountdown(countdowns: TickTickCountdown[], reference: string): TickTickCountdown {
+  const normalized = normalizeLabel(reference);
+  const exact = countdowns.find((countdown) => countdown.id === reference || normalizeLabel(countdown.name) === normalized);
+  if (exact) {
+    return exact;
+  }
+
+  const matches = countdowns.filter((countdown) => normalizeLabel(countdown.name).includes(normalized));
+  if (matches.length === 1) {
+    return matches[0]!;
+  }
+
+  if (matches.length > 1) {
+    throw new CliError(
+      `Countdown "${reference}" is ambiguous: ${matches.map((countdown) => displayLabel(countdown.name, countdown.id)).join(", ")}.`,
+    );
+  }
+
+  throw new CliError(`Countdown "${reference}" was not found.`);
 }
 
 export function resolveTasks(tasks: TickTickTask[], references: string[]): TickTickTask[] {

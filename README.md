@@ -20,7 +20,7 @@ The main deliverable is the `ticktick-unofficial` TypeScript library: a server-s
 
 ## Why This Exists
 
-TickTick's public API does not expose the full set of features available in the web app. This project uses the private web endpoints instead, which makes it possible to work with richer task sync payloads, habits, focus statistics and controls, ranking and general statistics, and other web-only flows.
+TickTick's public API does not expose the full set of features available in the web app. This project uses the private web endpoints instead, which makes it possible to work with richer task sync payloads, countdowns and anniversaries, habits, focus statistics and controls, ranking and general statistics, and other web-only flows.
 
 The library is intended for server-side use only:
 
@@ -116,6 +116,7 @@ Current high-level capabilities include:
 - User profile lookup
 - Project listing and column inspection
 - Full task sync access
+- Countdown listing, lookup, batch write, creation, updates, and deletion
 - Task listing, lookup, creation, updates, status transitions, deletion, and trash access
 - Completed-task iteration and pagination support
 - Habit listing, statistics, export, and check-in operations
@@ -128,6 +129,12 @@ Current high-level capabilities include:
 - `client.user.getProfile()`
 - `client.projects.list()`
 - `client.projects.listColumns()`
+- `client.countdowns.list()`
+- `client.countdowns.getById()`
+- `client.countdowns.batch()`
+- `client.countdowns.create()`
+- `client.countdowns.update()`
+- `client.countdowns.delete()`
 - `client.tasks.getAll()`
 - `client.tasks.list()`
 - `client.tasks.getById()`
@@ -184,7 +191,7 @@ Current high-level capabilities include:
 
 - interactive terminal workflows
 - stable JSON output for scripts and agents
-- project, task, habit, focus, and statistics commands
+- project, task, countdown, habit, focus, and statistics commands
 - account login/logout helpers
 - fuzzy resolution of projects, tasks, and habits by id, exact name, or unique partial match
 
@@ -196,6 +203,7 @@ The CLI can:
 - persist and reuse local sessions
 - inspect account identity with `whoami`
 - list, show, create, rename, edit, and remove projects
+- list, show, create, update, and remove countdowns
 - list, show, create, edit, move, complete, abandon, reopen, and remove tasks
 - inspect and control focus sessions
 - read general and ranking statistics
@@ -207,6 +215,8 @@ The CLI can:
 ```bash
 ticktick-unofficial-cli login
 ticktick-unofficial-cli whoami
+ticktick-unofficial-cli countdown list
+ticktick-unofficial-cli countdown add "Exam" --date 2026-03-30 --type countdown
 ticktick-unofficial-cli project list
 ticktick-unofficial-cli task list --project inbox --limit 20
 ticktick-unofficial-cli task add "Write release notes" --project Work --priority high
@@ -242,7 +252,7 @@ The API server can:
 
 - log into TickTick from environment credentials
 - expose health, metadata, and session-maintenance endpoints
-- expose project, task, habit, focus, and statistics endpoints over HTTP
+- expose project, task, countdown, habit, focus, and statistics endpoints over HTTP
 - refresh sessions on demand or on a schedule
 - serve OpenAPI docs for the implemented HTTP surface
 - run with file-backed or memory-backed session storage depending on runtime
@@ -261,6 +271,7 @@ Domain endpoints:
 
 - `GET /api/user/profile`
 - `GET /api/projects`
+- `GET /api/countdowns`
 - `GET /api/tasks`
 - `GET /api/habits`
 - `GET /api/focus/state`
