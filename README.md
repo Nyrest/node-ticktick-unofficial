@@ -1,15 +1,35 @@
-# TickTick Unofficial API
-[![CI](https://github.com/Nyrest/node-ticktick-unofficial/actions/workflows/ci.yml/badge.svg)](https://github.com/Nyrest/ticktick-unofficial/actions/workflows/ci.yml)
-<p align="center">
-  <img src="assets/logo.webp" alt="TickTick Unofficial Logo" width="320" />
-</p>
-Unofficial tooling for working with TickTick beyond the limits of the public API.
+<div align="center">
+  <img src="assets/logo.webp" alt="TickTick Unofficial" width="220" />
 
-This repo is for people who want to read, update, and automate their TickTick account with the same private web endpoints the web app uses. It includes:
+  <h1>TickTick Unofficial</h1>
 
-- a reusable client library for your own backend or automation scripts
-- a CLI for day-to-day terminal use
-- a single-user HTTP API if you want to expose your account through your own service
+  <p>Unofficial TickTick tooling for private web API access, automation, and self-hosted workflows.</p>
+
+  <p>
+    <a href="https://github.com/Nyrest/ticktick-unofficial/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/Nyrest/ticktick-unofficial/ci.yml?style=for-the-badge&label=CI" alt="CI" /></a>
+  </p>
+</div>
+
+## ✨ Features
+
+- ✔️ **The most comprehensive** implementation
+  - Includes `Pomodoro`, `Focus`, `Statistics`, `Countdown`, etc...
+  - Supports both TickTick and Dida365
+  - Heavily tested
+  - Provides library, CLI, and API interfaces
+
+- 🪛 **Modern** tech stack
+  - Full TypeScript with strict types
+  - Bun runtime for speed and native tooling
+  - Turborepo monorepo for modularity and efficient builds
+  - Playwright for reliable endpoint testing
+  - OpenAPI spec for the API app
+
+- 🧑‍💻 **Developer-friendly** design
+  - Intuitive API with high-level modules
+  - Comprehensive documentation and examples
+  - Easy local development with hot reload
+  - Auto session management renewal
 
 ## Supported Modules
 
@@ -135,6 +155,12 @@ bun run --cwd apps/ticktick-unofficial-api dev
    ├─ ticktick-unofficial-cli/
    └─ ticktick-unofficial-api/
 ```
+
+## Workspace Docs
+
+- Library docs: [`packages/node-ticktick-unofficial/README.md`](packages/node-ticktick-unofficial/README.md)
+- API docs: [`apps/ticktick-unofficial-api/README.md`](apps/ticktick-unofficial-api/README.md)
+- CLI docs: [`apps/ticktick-unofficial-cli/README.md`](apps/ticktick-unofficial-cli/README.md)
 
 ## Workspace Commands
 
