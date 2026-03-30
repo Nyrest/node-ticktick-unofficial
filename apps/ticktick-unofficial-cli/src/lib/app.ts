@@ -34,7 +34,7 @@ import {
   type TickTickTaskPriority,
   type TickTickTaskStatus,
   type TickTickTask,
-} from "ticktick-unofficial";
+} from "node-ticktick-unofficial";
 
 export const APP_NAME = "ticktick-unofficial-cli";
 export const ENV_SERVICE = "TICKTICK_SERVICE";

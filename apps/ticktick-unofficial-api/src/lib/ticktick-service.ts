@@ -5,7 +5,7 @@ import {
   TickTickClient,
   type TickTickSerializedSession,
   type TickTickSessionStore,
-} from "ticktick-unofficial/core";
+} from "node-ticktick-unofficial/core";
 
 import type { AppConfig, TickTickServiceDependencies } from "./config";
 

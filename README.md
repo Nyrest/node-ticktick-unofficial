@@ -12,7 +12,7 @@ This repo is for people who want to read, update, and automate their TickTick ac
 
 ## Supported Modules
 
-The shared `ticktick-unofficial` library currently exposes these supported modules:
+The shared `node-ticktick-unofficial` library currently exposes these supported modules:
 
 | Module | What it covers | Typical use |
 | --- | --- | --- |
@@ -30,7 +30,7 @@ TickTick is the default target. Dida365 is supported with the same overall shape
 
 ## Pick The Right Package
 
-### `packages/ticktick-unofficial`
+### `packages/node-ticktick-unofficial`
 
 Use this if you want to build your own integration, backend route, cron job, or agent workflow.
 
@@ -82,7 +82,7 @@ bun run build
 Use the library in your own server code:
 
 ```ts
-import { TickTickClient, createFileSessionStore } from "ticktick-unofficial";
+import { TickTickClient, createFileSessionStore } from "node-ticktick-unofficial";
 
 const client = await TickTickClient.create({
   credentials: {
@@ -121,7 +121,7 @@ bun run --cwd apps/ticktick-unofficial-api dev
 ```text
 .
 ├─ packages/
-│  └─ ticktick-unofficial/
+│  └─ node-ticktick-unofficial/
 └─ apps/
    ├─ ticktick-unofficial-cli/
    └─ ticktick-unofficial-api/
@@ -147,7 +147,7 @@ bun run build:api
 Workspace-local validation:
 
 ```bash
-bun run --cwd packages/ticktick-unofficial typecheck
+bun run --cwd packages/node-ticktick-unofficial typecheck
 bun run --cwd apps/ticktick-unofficial-cli typecheck
 bun run --cwd apps/ticktick-unofficial-api typecheck
 ```
@@ -160,6 +160,6 @@ bun run --cwd apps/ticktick-unofficial-api typecheck
 
 ## More Detail
 
-- Library docs: `packages/ticktick-unofficial/README.md`
+- Library docs: `packages/node-ticktick-unofficial/README.md`
 - CLI docs: `apps/ticktick-unofficial-cli/README.md`
 - API docs: `apps/ticktick-unofficial-api/README.md`

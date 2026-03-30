@@ -1,6 +1,6 @@
 import packageJson from "../../package.json";
 
-import type { TickTickServiceName, TickTickSessionStore } from "ticktick-unofficial/core";
+import type { TickTickServiceName, TickTickSessionStore } from "node-ticktick-unofficial/core";
 
 export type AppRuntime = "bun" | "node" | "vercel" | "cloudflare";
 export type CronDriver = "bun" | "elysia" | "vercel" | "cloudflare" | "disabled";

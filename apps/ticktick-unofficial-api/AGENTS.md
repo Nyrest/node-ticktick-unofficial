@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-`ticktick-unofficial-api` is a single-user HTTP API built with Bun and Elysia on top of the `ticktick-unofficial` workspace package.
+`ticktick-unofficial-api` is a single-user HTTP API built with Bun and Elysia on top of the `node-ticktick-unofficial` workspace package.
 
 Key paths:
 
@@ -65,7 +65,7 @@ There is no dedicated test runner configured yet. For API changes, validate by:
 
 Recommended cross-checks after shared-library changes:
 
-- `bun run --cwd packages/ticktick-unofficial build`
+- `bun run --cwd packages/node-ticktick-unofficial build`
 - `bun run --cwd apps/ticktick-unofficial-api typecheck`
 
 ## Code Style

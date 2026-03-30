@@ -37,7 +37,7 @@ From repo root:
 
 - Edit `src/` files only; `dist/` is generated.
 - Keep CLI command behavior and JSON output stable when possible.
-- The CLI depends on `ticktick-unofficial` through `workspace:*`. Recheck type compatibility after shared-library API changes.
+- The CLI depends on `node-ticktick-unofficial` through `workspace:*`. Recheck type compatibility after shared-library API changes.
 - Session and auth behavior is centralized in `src/lib/app.ts`; avoid duplicating runtime/session logic across commands.
 
 ## Testing Instructions

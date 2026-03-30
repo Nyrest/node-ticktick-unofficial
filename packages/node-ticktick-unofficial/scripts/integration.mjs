@@ -93,7 +93,7 @@ async function main() {
 
   const createdTask = await client.tasks.create({
     projectId,
-    title: "ticktick-unofficial integration task",
+    title: "node-ticktick-unofficial integration task",
     content: "Created by the integration smoke test",
     kind: "TEXT",
   });
@@ -105,7 +105,7 @@ async function main() {
 
   const updatedTask = await client.tasks.update({
     ...createdTask,
-    title: "ticktick-unofficial integration task updated",
+    title: "node-ticktick-unofficial integration task updated",
     content: "Updated by the integration smoke test",
   });
   const completedTask = await client.tasks.setStatus({

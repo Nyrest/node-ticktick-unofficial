@@ -11,9 +11,9 @@
     "typescript": "^5.9.3"
   },
   "scripts": {
-    "build": "bun run --cwd packages/ticktick-unofficial build && bun run --cwd apps/ticktick-unofficial-api build && bun run --cwd apps/ticktick-unofficial-cli build",
-    "typecheck": "bun run --cwd packages/ticktick-unofficial typecheck && bun run --cwd apps/ticktick-unofficial-api typecheck && bun run --cwd apps/ticktick-unofficial-cli typecheck",
-    "build:client": "bun run --cwd packages/ticktick-unofficial build",
+    "build": "bun run --cwd packages/node-ticktick-unofficial build && bun run --cwd apps/ticktick-unofficial-api build && bun run --cwd apps/ticktick-unofficial-cli build",
+    "typecheck": "bun run --cwd packages/node-ticktick-unofficial typecheck && bun run --cwd apps/ticktick-unofficial-api typecheck && bun run --cwd apps/ticktick-unofficial-cli typecheck",
+    "build:client": "bun run --cwd packages/node-ticktick-unofficial build",
     "build:api": "bun run --cwd apps/ticktick-unofficial-api build",
     "build:cli": "bun run --cwd apps/ticktick-unofficial-cli build"
   }

@@ -15,8 +15,8 @@ import {
   TickTickTaskPriorityInputHelp,
   TickTickTaskStatuses,
   TickTickTaskStatusInputHelp,
-} from "ticktick-unofficial";
-import type { TickTickClient, TickTickCountdown, TickTickHabit, TickTickTask } from "ticktick-unofficial";
+} from "node-ticktick-unofficial";
+import type { TickTickClient, TickTickCountdown, TickTickHabit, TickTickTask } from "node-ticktick-unofficial";
 
 import {
   APP_NAME,
@@ -2312,7 +2312,7 @@ function createCountdownCommand() {
 
 cli = new Crust(APP_NAME)
   .meta({
-    description: "Human-friendly and automation-friendly CLI for TickTick using ticktick-unofficial.",
+description: "Human-friendly and automation-friendly CLI for TickTick using node-ticktick-unofficial.",
   })
   .flags(rootFlags)
   .use(helpPlugin())

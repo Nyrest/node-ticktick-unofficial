@@ -19,7 +19,7 @@
     "noUnusedParameters": false,
     "noPropertyAccessFromIndexSignature": false,
     "paths": {
-      "ticktick-unofficial": ["../../packages/ticktick-unofficial/src/index.ts"]
+      "node-ticktick-unofficial": ["../../packages/node-ticktick-unofficial/src/index.ts"]
     },
     "types": ["bun"]
   },

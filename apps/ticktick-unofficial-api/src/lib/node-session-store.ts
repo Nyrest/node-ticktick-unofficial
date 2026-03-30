@@ -1,4 +1,4 @@
-import { MemorySessionStore, type TickTickSessionStore } from "ticktick-unofficial/core";
+import { MemorySessionStore, type TickTickSessionStore } from "node-ticktick-unofficial/core";
 
 import type { AppConfig } from "./config";
 import { createRedisSessionStore } from "./redis-session-store";
@@ -14,7 +14,7 @@ export async function createNodeSessionStore(config: AppConfig): Promise<TickTic
   }
 
   if (config.ticktick.sessionStore === "file") {
-    const { createFileSessionStore } = await import("ticktick-unofficial/node");
+const { createFileSessionStore } = await import("node-ticktick-unofficial/node");
     return createFileSessionStore(config.ticktick.sessionFile);
   }
 

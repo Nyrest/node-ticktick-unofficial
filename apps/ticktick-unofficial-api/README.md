@@ -146,7 +146,7 @@ The repo already includes deployment files for Docker, Vercel, and Cloudflare Wo
 
 ## Notes
 
-- This app depends on the local `ticktick-unofficial` workspace package.
+- This app depends on the local `node-ticktick-unofficial` workspace package.
 - It uses private TickTick web endpoints, not the official public API.
 - Upstream behavior may change without notice.
 - Do not commit `.env`, session files, secrets, or account data.

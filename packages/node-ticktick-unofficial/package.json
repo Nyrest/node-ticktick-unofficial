@@ -1,5 +1,5 @@
 {
-  "name": "ticktick-unofficial",
+  "name": "node-ticktick-unofficial",
   "version": "0.1.0",
   "description": "Server-side TypeScript client for TickTick and Dida365 private web APIs.",
   "type": "module",

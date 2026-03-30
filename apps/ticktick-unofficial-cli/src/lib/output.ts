@@ -7,7 +7,7 @@ import type {
   TickTickRankingStatistics,
   TickTickTask,
   TickTickTaskStatisticsEntry,
-} from "ticktick-unofficial";
+} from "node-ticktick-unofficial";
 import {
   formatTickTickCountdownDaysOption,
   formatTickTickCountdownTimerMode,
@@ -15,7 +15,7 @@ import {
   formatTickTickHabitStatus,
   formatTickTickTaskPriority,
   formatTickTickTaskStatus,
-} from "ticktick-unofficial";
+} from "node-ticktick-unofficial";
 
 import { parseApiDate, shortId, type RuntimeContext } from "./app.ts";
 

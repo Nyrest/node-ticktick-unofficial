@@ -7,7 +7,7 @@ COPY packages ./packages
 COPY apps ./apps
 
 RUN bun install
-RUN bun run --cwd packages/ticktick-unofficial build
+RUN bun run --cwd packages/node-ticktick-unofficial build
 
 WORKDIR /workspace/apps/ticktick-unofficial-api
 RUN bun run build

@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-`ticktick-unofficial` is the server-side TypeScript client library for TickTick and Dida365 private web APIs.
+`node-ticktick-unofficial` is the server-side TypeScript client library for TickTick and Dida365 private web APIs.
 
 Key directories:
 
@@ -23,8 +23,8 @@ This package is consumed by both workspace apps, so API changes here can break t
 
 If running from the monorepo root:
 
-- `bun run --cwd packages/ticktick-unofficial typecheck`
-- `bun run --cwd packages/ticktick-unofficial build`
+- `bun run --cwd packages/node-ticktick-unofficial typecheck`
+- `bun run --cwd packages/node-ticktick-unofficial build`
 
 ## Development Workflow
 
@@ -46,8 +46,8 @@ When changing exported types or task/focus/habit APIs:
 
 - Rebuild this package.
 - Then verify downstream workspaces still pass:
-  - `bun run --cwd apps/ticktick-unofficial-api typecheck`
-  - `bun run --cwd apps/ticktick-unofficial-cli typecheck`
+- `bun run --cwd apps/ticktick-unofficial-api typecheck`
+- `bun run --cwd apps/ticktick-unofficial-cli typecheck`
 
 ## Code Style
 
@@ -72,5 +72,5 @@ When changing exported types or task/focus/habit APIs:
 
 ## Additional Notes
 
-- The API app uses the worker-safe `ticktick-unofficial/core` path where needed.
+- The API app uses the worker-safe `node-ticktick-unofficial/core` path where needed.
 - The CLI depends on the package API directly and will surface typing drift quickly.

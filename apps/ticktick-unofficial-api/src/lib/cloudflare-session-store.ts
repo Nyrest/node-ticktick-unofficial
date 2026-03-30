@@ -1,4 +1,4 @@
-import { MemorySessionStore, type TickTickSessionStore } from "ticktick-unofficial/core";
+import { MemorySessionStore, type TickTickSessionStore } from "node-ticktick-unofficial/core";
 
 import type { AppConfig } from "./config";
 import { createRedisSessionStore } from "./redis-session-store";

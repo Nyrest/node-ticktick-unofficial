@@ -88,7 +88,7 @@ export function createApp(
             title: "TickTick Unofficial API",
             version: config.packageVersion,
             description:
-              "Typed single-user HTTP API for the local ticktick-unofficial client, including session maintenance, cron hooks, and optional bearer protection.",
+      "Typed single-user HTTP API for the local node-ticktick-unofficial client, including session maintenance, cron hooks, and optional bearer protection.",
           },
           tags: [
             { name: "System", description: "Service metadata, health, and session state." },

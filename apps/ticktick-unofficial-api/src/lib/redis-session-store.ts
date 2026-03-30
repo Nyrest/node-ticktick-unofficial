@@ -1,4 +1,4 @@
-import type { TickTickSerializedSession, TickTickSessionStore } from "ticktick-unofficial/core";
+import type { TickTickSerializedSession, TickTickSessionStore } from "node-ticktick-unofficial/core";
 
 export interface RedisSessionStoreOptions {
   url: string;

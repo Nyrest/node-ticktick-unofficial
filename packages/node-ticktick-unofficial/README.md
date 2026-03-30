@@ -1,4 +1,4 @@
-# ticktick-unofficial
+# node-ticktick-unofficial
 
 Server-side client for TickTick and Dida365 using the same private web endpoints the web app relies on.
 
@@ -26,13 +26,13 @@ TickTick is the default target. Dida365 is also supported.
 ## Install
 
 ```bash
-npm install ticktick-unofficial
+npm install node-ticktick-unofficial
 ```
 
 ## Quick Start
 
 ```ts
-import { TickTickClient, createFileSessionStore } from "ticktick-unofficial";
+import { TickTickClient, createFileSessionStore } from "node-ticktick-unofficial";
 
 const client = await TickTickClient.create({
   credentials: {
@@ -115,6 +115,6 @@ npm run build
 From the monorepo root:
 
 ```bash
-bun run --cwd packages/ticktick-unofficial typecheck
-bun run --cwd packages/ticktick-unofficial build
+bun run --cwd packages/node-ticktick-unofficial typecheck
+bun run --cwd packages/node-ticktick-unofficial build
 ```

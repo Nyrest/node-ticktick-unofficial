@@ -8,7 +8,7 @@ Workspace layout:
 
 ```text
 .
-├─ packages/ticktick-unofficial      # TypeScript client library
+├─ packages/node-ticktick-unofficial # TypeScript client library
 ├─ apps/ticktick-unofficial-api      # Bun + Elysia HTTP API
 └─ apps/ticktick-unofficial-cli      # Bun CLI
 ```
@@ -29,7 +29,7 @@ The root package is only a workspace coordinator. Production code lives in the w
 - Work from the repo root when installing or doing cross-workspace validation.
 - Use `bun run --cwd <workspace> <script>` for workspace-local commands.
 - The library should usually be built before validating downstream packaging behavior in the API or CLI.
-- The closest `AGENTS.md` file takes precedence. Use the workspace-local file when editing inside `packages/ticktick-unofficial`, `apps/ticktick-unofficial-api`, or `apps/ticktick-unofficial-cli`.
+- The closest `AGENTS.md` file takes precedence. Use the workspace-local file when editing inside `packages/node-ticktick-unofficial`, `apps/ticktick-unofficial-api`, or `apps/ticktick-unofficial-cli`.
 
 ## Testing Instructions
 
@@ -42,7 +42,7 @@ There is no unified automated test suite at the root yet. Do not invent test com
 
 Workspace-specific validation:
 
-- Library: `bun run --cwd packages/ticktick-unofficial typecheck`
+- Library: `bun run --cwd packages/node-ticktick-unofficial typecheck`
 - API: `bun run --cwd apps/ticktick-unofficial-api typecheck`
 - CLI: `bun run --cwd apps/ticktick-unofficial-cli typecheck`
 

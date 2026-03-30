@@ -1,4 +1,4 @@
-import type { TickTickClient } from "ticktick-unofficial";
+import type { TickTickClient } from "node-ticktick-unofficial";
 import type { StyleInstance } from "@crustjs/style";
 
 import { parseApiDate } from "./app.ts";

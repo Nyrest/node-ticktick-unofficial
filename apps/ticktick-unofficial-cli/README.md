@@ -28,7 +28,7 @@ bun run --cwd apps/ticktick-unofficial-cli start -- help
 If you change the shared library, rebuild it first:
 
 ```bash
-bun run --cwd packages/ticktick-unofficial build
+bun run --cwd packages/node-ticktick-unofficial build
 ```
 
 ## Signing In
@@ -161,6 +161,6 @@ Use that only when you explicitly want to exercise a real TickTick account.
 
 ## Notes
 
-- This CLI depends on the local `ticktick-unofficial` workspace package.
+- This CLI depends on the local `node-ticktick-unofficial` workspace package.
 - It uses private TickTick web endpoints through that shared library.
 - Do not commit local session files, debug dumps, or credentials.

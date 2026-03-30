@@ -1,7 +1,7 @@
 {
   "name": "ticktick-unofficial-cli",
   "version": "0.1.0",
-  "description": "Bun CLI for TickTick built with Crust and ticktick-unofficial.",
+  "description": "Bun CLI for TickTick built with Crust and node-ticktick-unofficial.",
   "module": "src/index.ts",
   "type": "module",
   "private": true,
@@ -26,7 +26,7 @@
     "@crustjs/prompts": "^0.0.10",
     "@crustjs/store": "^0.0.4",
     "@crustjs/style": "^0.0.6",
-    "ticktick-unofficial": "workspace:*"
+    "node-ticktick-unofficial": "workspace:*"
   },
   "devDependencies": {
     "@types/bun": "latest",
