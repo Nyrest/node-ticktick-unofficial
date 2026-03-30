@@ -1,66 +1,55 @@
 # ticktick-unofficial-cli
 
-Human-friendly and automation-friendly TickTick CLI built with [Bun](https://bun.com), [Crust](https://crustjs.com/docs/quick-start), and the local `ticktick-unofficial` client.
+Command-line access to TickTick for both people and scripts.
 
-It uses `src/` as the source root and supports both interactive terminal use and clean JSON output for scripts and AI agents.
+This CLI is meant to feel comfortable in normal terminal use while still being reliable for automation. You can browse your account, update tasks, start focus sessions, and switch to JSON output when another tool needs to consume the result.
 
-## Install
+## What It Is Good For
 
-From the repo root:
+- quick daily task management from the terminal
+- shell scripts and local automation
+- AI agent workflows that need structured output
+- working with TickTick without opening the web app
+
+## Quick Start
+
+Install dependencies from the repo root:
 
 ```bash
 bun install
 ```
 
-If you changed the local `ticktick-unofficial` package, rebuild it first:
-
-```bash
-bun run --cwd packages/ticktick-unofficial build
-```
-
-## Run
-
-Development:
-
-```bash
-bun run --cwd apps/ticktick-unofficial-cli src/cli.ts -- help
-```
-
-Via package script:
+Run the CLI in development:
 
 ```bash
 bun run --cwd apps/ticktick-unofficial-cli start -- help
 ```
 
-If you install/link the package as a CLI binary:
+If you change the shared library, rebuild it first:
 
 ```bash
-ticktick-unofficial-cli help
+bun run --cwd packages/ticktick-unofficial build
 ```
 
-## Authentication
+## Signing In
 
-You can authenticate in two ways.
-
-Interactive login:
+You can authenticate interactively:
 
 ```bash
 bun run src/cli.ts -- login
 ```
 
-Environment variables:
+Or use environment variables:
 
 ```bash
 export TICKTICK_USERNAME="you@example.com"
 export TICKTICK_PASSWORD="your-password"
 ```
 
-Supported auth-related environment variables:
+Optional auth-related settings:
 
-- `TICKTICK_USERNAME`
-- `TICKTICK_PASSWORD`
-- `TICKTICK_SERVICE` with `ticktick` or `dida365`
-- `TICKTICK_SESSION_PATH` to override the saved session file
+- `TICKTICK_SERVICE` to switch between `ticktick` and `dida365`
+- `TICKTICK_SESSION_PATH` to choose where the saved session lives
 
 Useful account commands:
 
@@ -70,118 +59,50 @@ ticktick-unofficial-cli logout
 ticktick-unofficial-cli whoami
 ```
 
-## Design Notes
+## Everyday Examples
 
-- Human mode prints formatted tables and readable summaries.
-- Agent mode uses `--json` for stable machine-readable output.
-- Most commands accept either a full ID, an exact name/title, or a unique partial match.
-- Destructive commands require confirmation unless you pass `-y`.
-
-## Global Flags
-
-These flags work across the CLI:
-
-- `-j`, `--json`
-- `--color`, `--no-color`
-- `--service <ticktick|dida365>`
-- `--session <path>`
-- `--timezone <iana-tz>`
-- `-V`, `--verbose`
-- `-v`, `--version`
-
-## Commands
-
-### Account
-
-```bash
-ticktick-unofficial-cli login
-ticktick-unofficial-cli logout
-ticktick-unofficial-cli whoami
-ticktick-unofficial-cli help
-ticktick-unofficial-cli help task
-```
-
-### Projects
+Projects:
 
 ```bash
 ticktick-unofficial-cli project list
-ticktick-unofficial-cli project list --search work
 ticktick-unofficial-cli project show inbox
-ticktick-unofficial-cli project columns inbox
-ticktick-unofficial-cli project add "Reading List" --color "#4F86F7"
-ticktick-unofficial-cli project rename "Reading List" "Books"
-ticktick-unofficial-cli project edit color Books "#2E7D32"
-ticktick-unofficial-cli project edit view Books kanban
-ticktick-unofficial-cli project remove -y Books
-ticktick-unofficial-cli project rm -y 69c804078f0823c509d537b4
+ticktick-unofficial-cli project add "Reading List"
 ```
 
-### Tasks
+Tasks:
 
 ```bash
-ticktick-unofficial-cli task list
-ticktick-unofficial-cli task ls --project inbox --limit 20
-ticktick-unofficial-cli task list --all --search report
-ticktick-unofficial-cli task show "Weekly review"
-ticktick-unofficial-cli task add "Write release notes" --project Work --priority high --due "2026-03-31 18:00"
-ticktick-unofficial-cli task edit due "Write release notes" "2026-04-01 09:00"
-ticktick-unofficial-cli task edit priority "Write release notes" medium
-ticktick-unofficial-cli task move "Write release notes" --project Inbox
+ticktick-unofficial-cli task list --project inbox
+ticktick-unofficial-cli task add "Write release notes" --project Work
 ticktick-unofficial-cli task complete "Write release notes"
-ticktick-unofficial-cli task reopen 69c804788c81d3c48d928dff
-ticktick-unofficial-cli task remove -y "Write release notes"
-ticktick-unofficial-cli task rm -y 69c804788c81d3c48d928dff
 ```
 
-### Countdowns
+Countdowns:
 
 ```bash
 ticktick-unofficial-cli countdown list
-ticktick-unofficial-cli countdown show "Weekend"
 ticktick-unofficial-cli countdown add "Exam" --date 2026-03-30 --type countdown
-ticktick-unofficial-cli countdown update "Exam" --style fullscreen_image --remark "Bring pens"
-ticktick-unofficial-cli countdown delete -y "Exam"
 ```
 
-### Focus
+Focus:
 
 ```bash
 ticktick-unofficial-cli focus status
-ticktick-unofficial-cli focus timeline --limit 10
-ticktick-unofficial-cli focus start --task "Deep work" --duration 50
-ticktick-unofficial-cli focus start --duration 25 --detach
-ticktick-unofficial-cli focus pause
-ticktick-unofficial-cli focus resume
+ticktick-unofficial-cli focus start --duration 25
 ticktick-unofficial-cli focus finish
-ticktick-unofficial-cli focus stop
 ```
 
-When `focus start` runs in a real terminal without `--detach`, it enters a live focus view with these keys:
-
-- `space` or `p`: pause/resume
-- `f`: finish
-- `s` or `x`: stop
-- `q`: leave the live view without stopping the session
-
-### Statistics
-
-```bash
-ticktick-unofficial-cli statistics
-ticktick-unofficial-cli statistics --from 2026-03-01 --to 2026-03-31
-```
-
-### Habits
+Habits and stats:
 
 ```bash
 ticktick-unofficial-cli habit list
-ticktick-unofficial-cli habit list --search exercise
-ticktick-unofficial-cli habit export
 ticktick-unofficial-cli habit export habits.xlsx
+ticktick-unofficial-cli statistics --from 2026-03-01 --to 2026-03-31
 ```
 
-## JSON Output for Agents
+## JSON Output
 
-All major commands can return structured JSON:
+Add `--json` when you want stable machine-readable output:
 
 ```bash
 ticktick-unofficial-cli task list --json
@@ -189,12 +110,26 @@ ticktick-unofficial-cli project add "Agent Project" --json
 ticktick-unofficial-cli focus status --json
 ```
 
-This is intended for:
+This is especially useful for:
 
-- shell scripts
+- scripts
 - CI jobs
+- local automations
 - AI agents
-- automation tools that need stable structured output
+
+## How It Behaves
+
+- normal mode prints readable tables and summaries
+- `--json` prints structured output
+- many commands accept an ID, exact name, or unique partial match
+- destructive operations ask for confirmation unless you pass `-y`
+
+When `focus start` runs in an interactive terminal without `--detach`, it opens a live focus view. The main keys are:
+
+- `space` or `p` to pause or resume
+- `f` to finish
+- `s` or `x` to stop
+- `q` to leave the live view without stopping the session
 
 ## Development
 
@@ -204,7 +139,7 @@ Typecheck:
 bun run --cwd apps/ticktick-unofficial-cli typecheck
 ```
 
-Bundle a Bun-targeted JS artifact:
+Build:
 
 ```bash
 bun run --cwd apps/ticktick-unofficial-cli build
@@ -216,22 +151,16 @@ Compile a standalone executable:
 bun run --cwd apps/ticktick-unofficial-cli compile
 ```
 
-Run the live end-to-end verifier against a real TickTick account:
+There is also a live verifier for real-account testing:
 
 ```bash
 bun run --cwd apps/ticktick-unofficial-cli verify:live
 ```
 
-The CLI entrypoint is:
+Use that only when you explicitly want to exercise a real TickTick account.
 
-```text
-src/cli.ts
-```
+## Notes
 
-Core helpers live in:
-
-```text
-src/lib/app.ts
-src/lib/output.ts
-src/lib/focus-mode.ts
-```
+- This CLI depends on the local `ticktick-unofficial` workspace package.
+- It uses private TickTick web endpoints through that shared library.
+- Do not commit local session files, debug dumps, or credentials.
