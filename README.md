@@ -1,5 +1,7 @@
-# TickTick Unofficial Monorepo
-
+# TickTick Unofficial API
+<p align="center">
+  <img src="assets/logo.webp" alt="TickTick Unofficial Logo" width="320" />
+</p>
 Unofficial tooling for working with TickTick beyond the limits of the public API.
 
 This repo is for people who want to read, update, and automate their TickTick account with the same private web endpoints the web app uses. It includes:
