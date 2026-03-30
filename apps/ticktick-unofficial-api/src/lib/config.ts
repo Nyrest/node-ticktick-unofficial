@@ -6,7 +6,7 @@ export type AppRuntime = "bun" | "node" | "vercel" | "cloudflare";
 export type CronDriver = "bun" | "elysia" | "vercel" | "cloudflare" | "disabled";
 export type RequestedCronDriver = CronDriver | "auto";
 export type ApiAuthMode = "none" | "bearer";
-export type SessionStoreMode = "memory" | "file";
+export type SessionStoreMode = "memory" | "file" | "redis";
 export type RequestedSessionStoreMode = SessionStoreMode | "auto";
 
 export interface AppConfig {
@@ -25,6 +25,11 @@ export interface AppConfig {
     language: string | undefined;
     sessionStore: SessionStoreMode;
     sessionFile: string;
+    sessionRedis: {
+      url: string | undefined;
+      token: string | undefined;
+      key: string;
+    };
   };
   auth: {
     mode: ApiAuthMode;
@@ -73,7 +78,15 @@ export function loadConfig(
 ): AppConfig {
   const runtime = options.runtime ?? resolveRuntime(env);
   const ticktickService = readEnum(env, "TICKTICK_SERVICE", ["ticktick", "dida365"], "ticktick");
-  const sessionStore = resolveSessionStore(runtime, readEnum(env, "TICKTICK_SESSION_STORE", ["auto", "memory", "file"], "auto"));
+  const username = requireString(env, "TICKTICK_USERNAME");
+  const password = requireString(env, "TICKTICK_PASSWORD");
+  const redisUrl = readString(env, "TICKTICK_SESSION_REDIS_URL") ?? readString(env, "UPSTASH_REDIS_REST_URL");
+  const redisToken = readString(env, "TICKTICK_SESSION_REDIS_TOKEN") ?? readString(env, "UPSTASH_REDIS_REST_TOKEN");
+  const sessionStore = resolveSessionStore(
+    runtime,
+    readEnum(env, "TICKTICK_SESSION_STORE", ["auto", "memory", "file", "redis"], "auto"),
+    { redisUrl, redisToken },
+  );
   const requestedCronDriver = readEnum(
     env,
     "CRON_DRIVER",
@@ -84,6 +97,14 @@ export function loadConfig(
   const standardCron = readString(env, "SESSION_REFRESH_CRON", "*/30 * * * *");
   const cronSecret = readString(env, "CRON_SECRET") ?? readString(env, "API_AUTH_TOKEN");
   const authMode = readEnum(env, "API_AUTH_MODE", ["none", "bearer"], "none");
+  const sessionRedisKey =
+    readString(env, "TICKTICK_SESSION_REDIS_KEY") ?? `${packageJson.name}:${ticktickService}:${username}:session`;
+
+  if (sessionStore === "redis" && (!redisUrl || !redisToken)) {
+    throw new ConfigurationError(
+      "Redis session storage requires TICKTICK_SESSION_REDIS_URL/TICKTICK_SESSION_REDIS_TOKEN or UPSTASH_REDIS_REST_URL/UPSTASH_REDIS_REST_TOKEN.",
+    );
+  }
 
   return {
     packageName: packageJson.name,
@@ -95,12 +116,17 @@ export function loadConfig(
     },
     ticktick: {
       service: ticktickService,
-      username: requireString(env, "TICKTICK_USERNAME"),
-      password: requireString(env, "TICKTICK_PASSWORD"),
+      username,
+      password,
       timezone: readString(env, "TICKTICK_TIMEZONE", Intl.DateTimeFormat().resolvedOptions().timeZone),
       language: readString(env, "TICKTICK_LANGUAGE"),
       sessionStore,
       sessionFile: readString(env, "TICKTICK_SESSION_FILE", ".data/ticktick-session.json"),
+      sessionRedis: {
+        url: redisUrl,
+        token: redisToken,
+        key: sessionRedisKey,
+      },
     },
     auth: {
       mode: authMode,
@@ -170,12 +196,20 @@ function detectRuntime(env: Record<string, string | undefined>): AppRuntime {
   return "node";
 }
 
-function resolveSessionStore(runtime: AppRuntime, mode: RequestedSessionStoreMode): SessionStoreMode {
+function resolveSessionStore(
+  runtime: AppRuntime,
+  mode: RequestedSessionStoreMode,
+  options: { redisUrl?: string; redisToken?: string },
+): SessionStoreMode {
   if (mode !== "auto") {
     return mode;
   }
 
-  return runtime === "cloudflare" || runtime === "vercel" ? "memory" : "file";
+  if (runtime === "cloudflare" || runtime === "vercel") {
+    return options.redisUrl && options.redisToken ? "redis" : "memory";
+  }
+
+  return "file";
 }
 
 function resolveCronDriver(runtime: AppRuntime, driver: RequestedCronDriver): CronDriver {

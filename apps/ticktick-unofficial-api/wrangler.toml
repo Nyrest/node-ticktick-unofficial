@@ -9,5 +9,5 @@ crons = ["*/30 * * * *"]
 [vars]
 APP_RUNTIME = "cloudflare"
 CRON_DRIVER = "cloudflare"
-TICKTICK_SESSION_STORE = "memory"
+TICKTICK_SESSION_STORE = "auto"
 SWAGGER_ENABLED = "false"

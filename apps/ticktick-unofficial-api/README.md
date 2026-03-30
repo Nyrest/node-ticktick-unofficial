@@ -75,8 +75,11 @@ These are the settings most people will care about first:
 | `SESSION_REFRESH_ENABLED` | `true` | Keeps scheduled refresh active |
 | `SESSION_REFRESH_CRON` | `*/30 * * * *` | Refresh cadence |
 | `CRON_DRIVER` | `auto` | Scheduler mode for your deployment |
+| `TICKTICK_SESSION_STORE` | `auto` | `file`, `memory`, or `redis` |
+| `TICKTICK_SESSION_REDIS_URL` |  | Redis REST URL for serverless session storage |
+| `TICKTICK_SESSION_REDIS_TOKEN` |  | Redis REST token for serverless session storage |
 
-Session storage defaults to file-backed storage on Bun or Node and memory-backed storage on serverless targets.
+Session storage defaults to file-backed storage on Bun or Node. On Vercel or Cloudflare, `auto` switches to Redis when Redis REST credentials are present and otherwise falls back to memory.
 
 ## Everyday Endpoints
 
@@ -111,6 +114,11 @@ This service is intentionally single-user:
 
 If you set `API_AUTH_MODE=bearer`, all `/api/*` routes require `Authorization: Bearer <API_AUTH_TOKEN>`.
 
+For Vercel and Cloudflare deployments, prefer Redis-backed session storage so TickTick auth survives cold starts and horizontal scaling. The API supports Upstash-compatible REST credentials through either:
+
+- `TICKTICK_SESSION_REDIS_URL` and `TICKTICK_SESSION_REDIS_TOKEN`
+- `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`
+
 ## Running And Building
 
 Local development:
@@ -131,7 +139,7 @@ bun run --cwd apps/ticktick-unofficial-api build
 This app can be deployed in several ways, but the practical guidance is simple:
 
 - use Bun or Docker if you want file-backed session storage and a long-running process
-- use Vercel or Cloudflare if you prefer managed deployment and can tolerate memory-backed sessions on cold starts
+- use Vercel or Cloudflare with Redis-backed session storage if you want managed deployment without losing cached sessions on cold starts
 - keep your cron schedule aligned with platform-specific config if you change refresh cadence
 
 The repo already includes deployment files for Docker, Vercel, and Cloudflare Worker targets.

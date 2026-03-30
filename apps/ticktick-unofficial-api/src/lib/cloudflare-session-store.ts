@@ -3,19 +3,14 @@ import { MemorySessionStore, type TickTickSessionStore } from "ticktick-unoffici
 import type { AppConfig } from "./config";
 import { createRedisSessionStore } from "./redis-session-store";
 
-export async function createNodeSessionStore(config: AppConfig): Promise<TickTickSessionStore> {
+export async function createCloudflareSessionStore(config: AppConfig): Promise<TickTickSessionStore> {
   if (config.ticktick.sessionStore === "redis") {
     return createRedisSessionStore({
       url: config.ticktick.sessionRedis.url!,
       token: config.ticktick.sessionRedis.token!,
       key: config.ticktick.sessionRedis.key,
-      runtime: "other",
+      runtime: "cloudflare",
     });
-  }
-
-  if (config.ticktick.sessionStore === "file") {
-    const { createFileSessionStore } = await import("ticktick-unofficial/node");
-    return createFileSessionStore(config.ticktick.sessionFile);
   }
 
   return new MemorySessionStore();

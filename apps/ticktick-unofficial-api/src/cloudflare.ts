@@ -1,9 +1,9 @@
 import type { ScheduledController } from "@cloudflare/workers-types";
 import { CloudflareAdapter } from "elysia/adapter/cloudflare-worker";
-import { MemorySessionStore } from "ticktick-unofficial/core";
 
 import { createApp } from "./app";
 import { loadConfig, readBaseEnv } from "./lib/config";
+import { createCloudflareSessionStore } from "./lib/cloudflare-session-store";
 import { TickTickService } from "./lib/ticktick-service";
 
 type WorkerBindings = Record<string, unknown>;
@@ -15,7 +15,7 @@ let cached:
     }
   | undefined;
 
-function getWorkerRuntime(bindings: WorkerBindings) {
+async function getWorkerRuntime(bindings: WorkerBindings) {
   if (cached) {
     return cached;
   }
@@ -29,7 +29,7 @@ function getWorkerRuntime(bindings: WorkerBindings) {
 
   const config = loadConfig(env, { runtime: "cloudflare" });
   const ticktick = new TickTickService(config, {
-    sessionStoreFactory: () => Promise.resolve(new MemorySessionStore()),
+    sessionStoreFactory: () => createCloudflareSessionStore(config),
   });
 
   cached = {
@@ -41,12 +41,12 @@ function getWorkerRuntime(bindings: WorkerBindings) {
 }
 
 export default {
-  fetch(request: Request, env: WorkerBindings, ctx: ExecutionContext) {
-    const runtime = getWorkerRuntime(env);
+  async fetch(request: Request, env: WorkerBindings, ctx: ExecutionContext) {
+    const runtime = await getWorkerRuntime(env);
     return runtime.app.fetch(request);
   },
   async scheduled(controller: ScheduledController, env: WorkerBindings, ctx: ExecutionContext) {
-    const runtime = getWorkerRuntime(env);
+    const runtime = await getWorkerRuntime(env);
     await runtime.ticktick.refreshSession(`cloudflare:${controller.cron}`);
   },
 };
