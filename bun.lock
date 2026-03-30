@@ -6,7 +6,7 @@
       "name": "ticktick-api-monorepo",
       "devDependencies": {
         "@types/bun": "latest",
-        "turbo": "latest",
+        "turbo": "2.8.21",
         "typescript": "^5.9.3",
       },
     },

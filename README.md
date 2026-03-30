@@ -1,4 +1,5 @@
 # TickTick Unofficial API
+[![CI](https://github.com/Nyrest/node-ticktick-unofficial/actions/workflows/ci.yml/badge.svg)](https://github.com/Nyrest/ticktick-unofficial/actions/workflows/ci.yml)
 <p align="center">
   <img src="assets/logo.webp" alt="TickTick Unofficial Logo" width="320" />
 </p>
