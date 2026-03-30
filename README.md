@@ -3,7 +3,7 @@
 
   <h1>TickTick Unofficial</h1>
 
-  <p>Unofficial TickTick tooling for private web API access, automation, and self-hosted workflows.</p>
+  <p>Unofficial TickTick tooling for private web API access, automation, and self-hosted workflows.<br/>The official APIs are too lame!</p>
 
   <p>
     <a href="https://github.com/Nyrest/ticktick-unofficial/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/Nyrest/ticktick-unofficial/ci.yml?style=for-the-badge&label=CI" alt="CI" /></a>
