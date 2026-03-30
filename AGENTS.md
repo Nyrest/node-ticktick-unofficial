@@ -23,12 +23,14 @@ The root package is only a workspace coordinator. Production code lives in the w
 - Build only the client library: `bun run build:client`
 - Build only the API app: `bun run build:api`
 - Build only the CLI app: `bun run build:cli`
+- Run Turbo directly: `bun run turbo -- run <task>`
 
 ## Development Workflow
 
 - Work from the repo root when installing or doing cross-workspace validation.
 - Use `bun run --cwd <workspace> <script>` for workspace-local commands.
 - The library should usually be built before validating downstream packaging behavior in the API or CLI.
+- Root `build` and `typecheck` scripts run through Turbo and should preserve dependency ordering through the workspace graph.
 - The closest `AGENTS.md` file takes precedence. Use the workspace-local file when editing inside `packages/node-ticktick-unofficial`, `apps/ticktick-unofficial-api`, or `apps/ticktick-unofficial-cli`.
 
 ## Testing Instructions

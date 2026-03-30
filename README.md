@@ -77,6 +77,14 @@ bun run typecheck
 bun run build
 ```
 
+Turbo is wired in at the repo root, so these commands now run through the workspace dependency graph with caching enabled.
+
+Add Turborepo to this Bun workspace with:
+
+```bash
+bun install turbo --dev
+```
+
 ## Typical Ways To Use It
 
 Use the library in your own server code:
@@ -142,6 +150,15 @@ Targeted builds:
 bun run build:client
 bun run build:cli
 bun run build:api
+```
+
+Direct Turbo usage:
+
+```bash
+bunx turbo run build
+bunx turbo run typecheck
+bunx turbo run build --filter=node-ticktick-unofficial
+bunx turbo run build --filter=ticktick-unofficial-api
 ```
 
 Workspace-local validation:
