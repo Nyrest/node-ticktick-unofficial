@@ -7,6 +7,7 @@ import { TickTickCountdownsApi } from "./modules/countdowns.js";
 import { TickTickProjectsApi } from "./modules/projects.js";
 import { TickTickStatisticsApi } from "./modules/statistics.js";
 import { TickTickTasksApi } from "./modules/tasks.js";
+import { TickTickTagsApi } from "./modules/tags.js";
 import { TickTickUserApi } from "./modules/user.js";
 import type {
   TickTickClientOptions,
@@ -55,6 +56,7 @@ export class TickTickClient {
   readonly device: TickTickDeviceDescriptor;
 
   readonly tasks: TickTickTasksApi;
+  readonly tags: TickTickTagsApi;
   readonly projects: TickTickProjectsApi;
   readonly countdowns: TickTickCountdownsApi;
   readonly habits: TickTickHabitsApi;
@@ -99,6 +101,7 @@ export class TickTickClient {
     }
 
     this.tasks = new TickTickTasksApi(this);
+    this.tags = new TickTickTagsApi(this);
     this.projects = new TickTickProjectsApi(this);
     this.countdowns = new TickTickCountdownsApi(this);
     this.habits = new TickTickHabitsApi(this);

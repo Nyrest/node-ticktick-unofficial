@@ -242,7 +242,29 @@ export interface TickTickTask {
   kind?: string | null;
   tags?: string[];
   etag?: string;
+  pinnedTime?: string | null;
   [key: string]: unknown;
+}
+
+export interface TickTickTag {
+  name: string;
+  label?: string;
+  color?: string;
+  parent?: string | null;
+  sortOrder?: number;
+  sortType?: string;
+  etag?: string;
+}
+
+export interface TickTickTagBatchRequest {
+  add?: TickTickTag[];
+  update?: TickTickTag[];
+  delete?: string[];
+}
+
+export interface TickTickTagBatchResponse {
+  id2etag?: Record<string, string>;
+  id2error?: Record<string, unknown>;
 }
 
 export interface TickTickProjectProfile {
@@ -349,6 +371,7 @@ export interface TickTickTaskDraft {
   startDate?: string | null;
   tags?: string[];
   timeZone?: string;
+  pinnedTime?: string | null;
 }
 
 export interface TickTickTaskStatusMutation {

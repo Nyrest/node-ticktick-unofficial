@@ -161,6 +161,30 @@ export class TickTickTasksApi {
     return tasks;
   }
 
+  async setPinned(taskId: string, pin: boolean | Date | string | number): Promise<TickTickTask> {
+    const task = await this.#requireTask(taskId, { includeCompleted: true });
+    let pinnedTimeValue: string | null;
+
+    if (pin === false) {
+      pinnedTimeValue = "-1";
+    } else if (pin === true) {
+      pinnedTimeValue = toApiDateTime(new Date());
+    } else if (typeof pin === "string" && pin === "-1") {
+      pinnedTimeValue = "-1";
+    } else {
+      pinnedTimeValue = toApiDateTime(pin);
+    }
+
+    const updatedTask: TickTickTask = {
+      ...task,
+      pinnedTime: pinnedTimeValue,
+      modifiedTime: toApiDateTime(new Date()) ?? task.modifiedTime,
+    };
+
+    await this.update(updatedTask);
+    return updatedTask;
+  }
+
   async move(taskId: string, toProjectId: string): Promise<TickTickTask> {
     const task = await this.#requireTask(taskId);
     if (task.projectId === toProjectId) {
