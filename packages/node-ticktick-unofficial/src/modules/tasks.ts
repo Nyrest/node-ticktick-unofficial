@@ -15,16 +15,11 @@ import type {
 } from "../types.js";
 
 export class TickTickTasksApi {
-  readonly #taskCache = new Map<string, TickTickTask>();
-
   constructor(private readonly client: TickTickClient) {}
 
   getAll(): Promise<TickTickTaskSyncResponse> {
     return this.client.requestJson<TickTickTaskSyncResponse>({
       path: "/api/v2/batch/check/0",
-    }).then((response) => {
-      this.#rememberTasks(response.syncTaskBean?.update ?? []);
-      return response;
     });
   }
 
@@ -34,28 +29,21 @@ export class TickTickTasksApi {
   }
 
   async getById(taskId: string, options: { includeCompleted?: boolean } = {}): Promise<TickTickTask | null> {
-    const cachedTask = this.#taskCache.get(taskId);
-    if (cachedTask) {
-      return cachedTask;
-    }
+    try {
+      const task = await this.client.requestJson<TickTickTask>({
+        path: `/api/v2/task/${taskId}`,
+      });
 
-    const tasks = await this.list();
-    const task = tasks.find((item) => item.id === taskId);
-    if (task || options.includeCompleted === false) {
-      if (task) {
-        this.#rememberTask(task);
-      }
-      return task ?? null;
-    }
-
-    for (const status of ["Completed", "Abandoned"] as const) {
-      for await (const page of this.iterateCompleted(status)) {
-        const completedTask = page.find((item) => item.id === taskId);
-        if (completedTask) {
-          this.#rememberTask(completedTask);
-          return completedTask;
+      if (task && task.id === taskId) {
+        const isClosed = task.status === TickTickTaskStatuses.completed || task.status === TickTickTaskStatuses.wontDo;
+        if (isClosed && options.includeCompleted === false) {
+          return null;
         }
+
+        return task;
       }
+    } catch (error) {
+      // Task not found or API error
     }
 
     return null;
@@ -143,7 +131,6 @@ export class TickTickTasksApi {
     }
 
     await this.batch({ add: tasks });
-    this.#rememberTasks(tasks);
     return tasks;
   }
 
@@ -152,12 +139,10 @@ export class TickTickTasksApi {
   async update(tasks: TickTickTask | TickTickTask[]): Promise<TickTickTask | TickTickTask[]> {
     if (!Array.isArray(tasks)) {
       await this.batch({ update: [tasks] });
-      this.#rememberTask(tasks);
       return tasks;
     }
 
     await this.batch({ update: tasks });
-    this.#rememberTasks(tasks);
     return tasks;
   }
 
@@ -206,9 +191,7 @@ export class TickTickTasksApi {
     };
 
     await this.update(movedTask);
-    const resolvedTask = (await this.getById(taskId)) ?? movedTask;
-    this.#rememberTask(resolvedTask);
-    return resolvedTask;
+    return (await this.getById(taskId)) ?? movedTask;
   }
 
   async setStatus(change: TickTickTaskStatusMutation): Promise<TickTickTask>;
@@ -219,13 +202,11 @@ export class TickTickTasksApi {
     if (!Array.isArray(change)) {
       const task = await this.#buildStatusUpdate(change);
       await this.batch({ update: [task] });
-      this.#rememberTask(task);
       return task;
     }
 
     const updates = await Promise.all(change.map((entry) => this.#buildStatusUpdate(entry)));
     await this.batch({ update: updates });
-    this.#rememberTasks(updates);
     return updates;
   }
 
@@ -235,13 +216,11 @@ export class TickTickTasksApi {
     if (!Array.isArray(taskIds)) {
       const task = await this.#buildDeletedTask(taskIds);
       await this.batch({ update: [task] });
-      this.#rememberTask(task);
       return task;
     }
 
     const updates = await Promise.all(taskIds.map((taskId) => this.#buildDeletedTask(taskId)));
     await this.batch({ update: updates });
-    this.#rememberTasks(updates);
     return updates;
   }
 
@@ -271,19 +250,7 @@ export class TickTickTasksApi {
       json: task,
     });
 
-    const resolvedTask = response && typeof response === "object" ? response : task;
-    this.#rememberTask(resolvedTask);
-    return resolvedTask;
-  }
-
-  #rememberTask(task: TickTickTask): void {
-    this.#taskCache.set(task.id, task);
-  }
-
-  #rememberTasks(tasks: TickTickTask[]): void {
-    for (const task of tasks) {
-      this.#rememberTask(task);
-    }
+    return response && typeof response === "object" ? response : task;
   }
 
   async #buildStatusUpdate(entry: TickTickTaskStatusMutation): Promise<TickTickTask> {
