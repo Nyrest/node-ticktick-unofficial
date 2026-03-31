@@ -11,6 +11,8 @@ import type {
   TickTickHabitCheckinStatusInput,
   TickTickHabitStatus,
   TickTickHabitStatusInput,
+  TickTickTagType,
+  TickTickTagTypeInput,
   TickTickTaskItemStatus,
   TickTickTaskPriority,
   TickTickTaskPriorityInput,
@@ -278,6 +280,22 @@ export interface TickTickTag {
   sortOrder?: number;
   sortType?: string;
   etag?: string;
+  rawName?: string;
+  type?: TickTickTagType;
+  sortOption?: {
+    groupBy: string;
+    orderBy: string;
+    order?: string | null;
+  };
+  timeline?: {
+    sortOption: {
+      groupBy: string;
+      orderBy: string;
+      order?: string | null;
+    };
+    range?: string | null;
+    sortType?: string | null;
+  };
 }
 
 export interface TickTickTagBatchRequest {

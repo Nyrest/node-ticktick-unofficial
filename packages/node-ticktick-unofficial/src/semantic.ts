@@ -1,6 +1,8 @@
 // Verified against the live TickTick web app, public Help Center content,
 // and the logged-in web app payloads on 2026-03-29.
 
+import type { TickTickTag } from "./types.js";
+
 export const TickTickTaskPriorities = {
   none: 0,
   low: 1,
@@ -57,6 +59,18 @@ export type TickTickHabitStatusInput =
   | TickTickHabitStatus
   | TickTickHabitStatusName
   | `${TickTickHabitStatus}`;
+
+export const TickTickTagTypes = {
+  personal: 1,
+  shared: 2,
+} as const;
+
+export type TickTickTagTypeName = keyof typeof TickTickTagTypes;
+export type TickTickTagType = (typeof TickTickTagTypes)[TickTickTagTypeName];
+export type TickTickTagTypeInput =
+  | TickTickTagType
+  | TickTickTagTypeName
+  | `${TickTickTagType}`;
 
 export const TickTickHabitCheckinStatuses = {
   unlabeled: 0,
@@ -260,6 +274,21 @@ export function formatTickTickHabitStatus(value: number | null | undefined): str
   return formatUnknown(value);
 }
 
+export function parseTickTickTagType(
+  input: TickTickTagTypeInput | string | number | null | undefined,
+): TickTickTagType | undefined {
+  return parseMappedValue(
+    input,
+    {
+      personal: TickTickTagTypes.personal,
+      "1": TickTickTagTypes.personal,
+      shared: TickTickTagTypes.shared,
+      "2": TickTickTagTypes.shared,
+    },
+    'Invalid TickTick tag type "%s". Use personal, shared, 1, or 2.',
+  );
+}
+
 export function parseTickTickHabitCheckinStatus(
   input: TickTickHabitCheckinStatusInput | string | number | null | undefined,
 ): TickTickHabitCheckinStatus | undefined {
@@ -285,6 +314,12 @@ export function formatTickTickHabitCheckinStatus(value: number | null | undefine
   if (value == null || value === TickTickHabitCheckinStatuses.unlabeled) return "unlabeled";
   if (value === TickTickHabitCheckinStatuses.undone) return "undone";
   if (value === TickTickHabitCheckinStatuses.done) return "done";
+  return formatUnknown(value);
+}
+
+export function formatTickTickTagType(value: number | null | undefined): string {
+  if (value === TickTickTagTypes.personal) return "personal";
+  if (value === TickTickTagTypes.shared) return "shared";
   return formatUnknown(value);
 }
 
@@ -376,6 +411,58 @@ export function parseTickTickCountdownDaysOption(
     },
     `Invalid TickTick countdown smart-list option "%s". Use ${TickTickCountdownDaysOptionInputHelp}.`,
   );
+}
+
+function normalizeLabel(value: unknown): string {
+  return typeof value === "string" ? value.trim().toLowerCase() : "";
+}
+
+function displayLabel(value: unknown, fallback: string): string {
+  return typeof value === "string" && value.trim().length > 0 ? value : fallback;
+}
+
+/**
+ * Generic resolver for TickTick entities (projects, habits, tags, etc.)
+ */
+function resolveEntity<T>(
+  entities: T[],
+  reference: string,
+  options: {
+    type: string;
+    getId: (item: T) => string | undefined;
+    getName: (item: T) => string | undefined;
+  },
+): T {
+  const normalized = normalizeLabel(reference);
+
+  // 1. Try exact match on ID or Name
+  const exact = entities.find(
+    (item) => options.getId(item) === reference || normalizeLabel(options.getName(item)) === normalized,
+  );
+  if (exact) return exact;
+
+  // 2. Try partial match on Name
+  const matches = entities.filter((item) => normalizeLabel(options.getName(item)).includes(normalized));
+
+  if (matches.length === 1) return matches[0]!;
+
+  if (matches.length > 1) {
+    throw new Error(
+      `${options.type} "${reference}" is ambiguous: ${matches
+        .map((item) => displayLabel(options.getName(item), options.getId(item) ?? ""))
+        .join(", ")}.`,
+    );
+  }
+
+  throw new Error(`${options.type} "${reference}" was not found.`);
+}
+
+export function resolveTag(tags: TickTickTag[], reference: string): TickTickTag {
+  return resolveEntity(tags, reference, {
+    type: "Tag",
+    getId: (t) => t.name, // Tags use 'name' as ID
+    getName: (t) => t.label || t.name,
+  });
 }
 
 export function formatTickTickCountdownDaysOption(value: number | null | undefined): string {

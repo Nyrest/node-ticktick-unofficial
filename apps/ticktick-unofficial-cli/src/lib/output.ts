@@ -5,6 +5,7 @@ import type {
   TickTickHabit,
   TickTickProjectProfile,
   TickTickRankingStatistics,
+  TickTickTag,
   TickTickTask,
   TickTickTaskStatisticsEntry,
 } from "node-ticktick-unofficial";
@@ -82,6 +83,31 @@ export function renderProjectDetails(project: TickTickProjectProfile): string {
     `Color: ${project.color ?? "-"}`,
     `Closed: ${project.closed ? "yes" : "no"}`,
     `Permission: ${project.permission ?? "-"}`,
+  ].join("\n");
+}
+
+export function renderTagTable(tags: TickTickTag[]): string {
+  const rows = tags.map((tag) => [
+    tag.name,
+    tag.label || tag.name,
+    tag.color ?? "-",
+    tag.parent ?? "-",
+    tag.sortOrder == null ? "-" : String(tag.sortOrder),
+    tag.sortType ?? "-",
+  ]);
+
+  return table(["Name", "Label", "Color", "Parent", "Order", "Type"], rows);
+}
+
+export function renderTagDetails(tag: TickTickTag): string {
+  return [
+    `Name: ${tag.name}`,
+    `Label: ${tag.label || tag.name}`,
+    `Color: ${tag.color ?? "-"}`,
+    `Parent: ${tag.parent ?? "-"}`,
+    `Sort order: ${tag.sortOrder ?? "-"}`,
+    `Sort type: ${tag.sortType ?? "-"}`,
+    `Etag: ${tag.etag ?? "-"}`,
   ].join("\n");
 }
 

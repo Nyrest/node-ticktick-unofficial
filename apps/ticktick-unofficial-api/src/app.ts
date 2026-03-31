@@ -39,10 +39,14 @@ import {
   RootInfoSchema,
   SessionMaintenanceSchema,
   SessionStatusSchema,
+  TagBatchRequestSchema,
+  TagBatchResponseSchema,
+  TagSchema,
   TaskBatchRequestSchema,
   TaskBatchResponseSchema,
   TaskDraftSchema,
   TaskMoveSchema,
+  TaskPinSchema,
   TaskSchema,
   TaskStatisticsEntrySchema,
   TaskStatusMutationSchema,
@@ -51,6 +55,7 @@ import {
   TrashResponseSchema,
   UserProfileSchema,
 } from "./lib/schemas";
+import { resolveTag, TickTickTaskStatuses } from "node-ticktick-unofficial";
 import { mapErrorToResponse, type TickTickService } from "./lib/ticktick-service";
 
 const ArrayOfUnknownRecords = t.Array(t.Record(t.String(), t.Any()));
@@ -88,13 +93,14 @@ export function createApp(
             title: "TickTick Unofficial API",
             version: config.packageVersion,
             description:
-      "Typed single-user HTTP API for the local node-ticktick-unofficial client, including session maintenance, cron hooks, and optional bearer protection.",
+              "Typed single-user HTTP API for the local node-ticktick-unofficial client, including session maintenance, cron hooks, and optional bearer protection.",
           },
           tags: [
             { name: "System", description: "Service metadata, health, and session state." },
             { name: "User", description: "TickTick account profile data." },
             { name: "Projects", description: "Project and column management." },
-            { name: "Tasks", description: "Task sync, CRUD, status changes, and trash access." },
+            { name: "Tags", description: "Tag management." },
+            { name: "Tasks", description: "Task sync, CRUD, pinning, status changes, and trash access." },
             { name: "Countdowns", description: "Countdown, anniversary, birthday, and holiday management." },
             { name: "Habits", description: "Habit CRUD, exports, and check-in workflows." },
             { name: "Focus", description: "Pomodoro, focus timeline, and focus operations." },
@@ -195,9 +201,8 @@ export function createApp(
       {
         detail: {
           tags: ["Internal"],
-          summary: "Trigger session maintenance",
-          description:
-            "Protected maintenance hook for Vercel Cron or any external scheduler. Requires the cron bearer secret.",
+          summary: "Trigger session refresh",
+          description: "Internal endpoint used by platform schedulers to maintain an active TickTick session.",
           security: [{ cronSecret: [] }],
         },
         response: {
@@ -207,67 +212,16 @@ export function createApp(
       },
     );
 
-  const app =
-    config.cron.enabled && config.cron.driver === "elysia"
-      ? baseApp.use(
-          cron({
-            name: "sessionRefresh",
-            pattern: config.cron.schedule.elysia,
-            run() {
-              void ticktick.refreshSession("elysia-cron");
-            },
-          }),
-        )
-      : baseApp;
-
   const api = new Elysia({ prefix: "/api" })
-    .use(bearer())
-    .onBeforeHandle(function authorizeApi({ bearer, set }) {
-      if (config.auth.mode === "none") {
-        return;
-      }
-
-      if (bearer !== config.auth.token) {
-        set.status = 401;
-        set.headers["WWW-Authenticate"] = "Bearer";
-        return {
-          code: "UNAUTHORIZED",
-          message: "Valid bearer token required.",
-        };
-      }
-    })
     .get(
       "/session",
       async function getSessionStatus() {
         return ticktick.getSessionStatus();
       },
       {
-        detail: protectedDetail(
-          config,
-          "System",
-          "Inspect cached TickTick session",
-          "Returns the current session cache status without forcing validation or relogin.",
-        ),
+        detail: protectedDetail(config, "System", "Get session status", "Checks if the server has a valid TickTick session."),
         response: {
           200: SessionStatusSchema,
-          401: ErrorSchema,
-        },
-      },
-    )
-    .post(
-      "/session/refresh",
-      async function refreshSession() {
-        return ticktick.refreshSession("api");
-      },
-      {
-        detail: protectedDetail(
-          config,
-          "System",
-          "Refresh TickTick session",
-          "Validates the cached session, performs keepalive when valid, and logs in again when the cached session is stale.",
-        ),
-        response: {
-          200: SessionMaintenanceSchema,
           401: ErrorSchema,
         },
       },
@@ -278,12 +232,7 @@ export function createApp(
         return (await ticktick.getClient()).user.getProfile();
       },
       {
-        detail: protectedDetail(
-          config,
-          "User",
-          "Get user profile",
-          "Returns the authenticated TickTick account profile payload.",
-        ),
+        detail: protectedDetail(config, "User", "Get user profile", "Returns basic account information."),
         response: {
           200: UserProfileSchema,
           401: ErrorSchema,
@@ -296,7 +245,7 @@ export function createApp(
         return (await ticktick.getClient()).projects.list();
       },
       {
-        detail: protectedDetail(config, "Projects", "List projects", "Returns all visible project profiles."),
+        detail: protectedDetail(config, "Projects", "List projects", "Returns the full project list."),
         response: {
           200: t.Array(ProjectSchema),
           401: ErrorSchema,
@@ -304,36 +253,15 @@ export function createApp(
       },
     )
     .get(
-      "/projects/:projectId",
-      async function getProjectById({ params }) {
-        return (await ticktick.getClient()).projects.getById(params.projectId);
-      },
-      {
-        params: t.Object({
-          projectId: t.String(),
-        }),
-        detail: protectedDetail(config, "Projects", "Get project by id", "Looks up a single project profile by its id."),
-        response: {
-          200: t.Union([ProjectSchema, t.Null()]),
-          401: ErrorSchema,
-        },
-      },
-    )
-    .get(
       "/projects/:projectId/columns",
-      async function listProjectColumns({ params }) {
+      async function listColumns({ params }) {
         return (await ticktick.getClient()).projects.listColumns(params.projectId);
       },
       {
         params: t.Object({
           projectId: t.String(),
         }),
-        detail: protectedDetail(
-          config,
-          "Projects",
-          "List project columns",
-          "Returns the column list for a specific project.",
-        ),
+        detail: protectedDetail(config, "Projects", "List project columns", "Returns columns for a Kanban-style project."),
         response: {
           200: t.Array(ColumnSchema),
           401: ErrorSchema,
@@ -343,11 +271,25 @@ export function createApp(
     .post(
       "/projects",
       async function createProject({ body }) {
-        return (await ticktick.getClient()).projects.create(body);
+        return (await ticktick.getClient()).projects.create(body as never);
       },
       {
         body: ProjectCreateSchema,
-        detail: protectedDetail(config, "Projects", "Create project", "Creates a new project."),
+        detail: protectedDetail(config, "Projects", "Create project", "Creates a new project list."),
+        response: {
+          200: ProjectBatchResponseSchema,
+          401: ErrorSchema,
+        },
+      },
+    )
+    .post(
+      "/projects/batch",
+      async function batchProjects({ body }) {
+        return (await ticktick.getClient()).projects.batch(body as never);
+      },
+      {
+        body: ProjectBatchRequestSchema,
+        detail: protectedDetail(config, "Projects", "Batch mutate projects", "Submits add, update, or delete project mutations."),
         response: {
           200: ProjectBatchResponseSchema,
           401: ErrorSchema,
@@ -367,21 +309,7 @@ export function createApp(
           projectId: t.String(),
         }),
         body: ProjectUpdateSchema,
-        detail: protectedDetail(config, "Projects", "Update project", "Updates a single project by route id."),
-        response: {
-          200: ProjectBatchResponseSchema,
-          401: ErrorSchema,
-        },
-      },
-    )
-    .post(
-      "/projects/batch",
-      async function batchProjects({ body }) {
-        return (await ticktick.getClient()).projects.batch(body);
-      },
-      {
-        body: ProjectBatchRequestSchema,
-        detail: protectedDetail(config, "Projects", "Batch mutate projects", "Submits add, update, or delete project changes."),
+        detail: protectedDetail(config, "Projects", "Update project", "Updates project metadata by id."),
         response: {
           200: ProjectBatchResponseSchema,
           401: ErrorSchema,
@@ -400,6 +328,170 @@ export function createApp(
         detail: protectedDetail(config, "Projects", "Delete project", "Deletes a project by id."),
         response: {
           200: ProjectBatchResponseSchema,
+          401: ErrorSchema,
+        },
+      },
+    )
+    .get(
+      "/tags",
+      async function listTags() {
+        return (await ticktick.getClient()).tags.list();
+      },
+      {
+        detail: protectedDetail(config, "Tags", "List tags", "Returns all account tags."),
+        response: {
+          200: t.Array(TagSchema),
+          401: ErrorSchema,
+        },
+      },
+    )
+    .get(
+      "/tags/:tagName",
+      async function getTag({ params }) {
+        const tags = await (await ticktick.getClient()).tags.list();
+        return resolveTag(tags, params.tagName);
+      },
+      {
+        params: t.Object({
+          tagName: t.String(),
+        }),
+        detail: protectedDetail(config, "Tags", "Get tag", "Returns a single tag by name."),
+        response: {
+          200: TagSchema,
+          401: ErrorSchema,
+        },
+      },
+    )
+    .post(
+      "/tags",
+      async function createTag({ body }) {
+        return (await ticktick.getClient()).tags.create(body as never);
+      },
+      {
+        body: t.Union([TagSchema, t.Array(TagSchema)]),
+        detail: protectedDetail(config, "Tags", "Create tag or tags", "Creates one or multiple tags."),
+        response: {
+          200: TagBatchResponseSchema,
+          401: ErrorSchema,
+        },
+      },
+    )
+    .patch(
+      "/tags/:tagName",
+      async function updateTag({ body, params }) {
+        return (await ticktick.getClient()).tags.update({
+          ...body,
+          name: params.tagName,
+        });
+      },
+      {
+        params: t.Object({
+          tagName: t.String(),
+        }),
+        body: t.Partial(TagSchema),
+        detail: protectedDetail(config, "Tags", "Update tag", "Updates a single tag by its name."),
+        response: {
+          200: TagBatchResponseSchema,
+          401: ErrorSchema,
+        },
+      },
+    )
+    .post(
+      "/tags/:tagName/rename",
+      async function renameTag({ body, params }) {
+        return (await ticktick.getClient()).tags.rename(params.tagName, body.newName);
+      },
+      {
+        params: t.Object({
+          tagName: t.String(),
+        }),
+        body: t.Object({
+          newName: t.String(),
+        }),
+        detail: protectedDetail(config, "Tags", "Rename tag", "Renames a tag to a new label."),
+        response: {
+          200: TagBatchResponseSchema,
+          401: ErrorSchema,
+        },
+      },
+    )
+    .post(
+      "/tags/:tagName/merge",
+      async function mergeTag({ body, params }) {
+        return (await ticktick.getClient()).tags.merge(params.tagName, body.targetTagName);
+      },
+      {
+        params: t.Object({
+          tagName: t.String(),
+        }),
+        body: t.Object({
+          targetTagName: t.String(),
+        }),
+        detail: protectedDetail(config, "Tags", "Merge tag", "Merges a tag into another target tag."),
+        response: {
+          200: TagBatchResponseSchema,
+          401: ErrorSchema,
+        },
+      },
+    )
+    .post(
+      "/tags/batch",
+      async function batchTags({ body }) {
+        return (await ticktick.getClient()).tags.batch(body as never);
+      },
+      {
+        body: TagBatchRequestSchema,
+        detail: protectedDetail(config, "Tags", "Batch mutate tags", "Submits add, update, or delete tag changes."),
+        response: {
+          200: TagBatchResponseSchema,
+          401: ErrorSchema,
+        },
+      },
+    )
+    .delete(
+      "/tags/:tagName",
+      async function deleteTag({ params }) {
+        return (await ticktick.getClient()).tags.delete(params.tagName);
+      },
+      {
+        params: t.Object({
+          tagName: t.String(),
+        }),
+        detail: protectedDetail(config, "Tags", "Delete tag", "Deletes a tag by name."),
+        response: {
+          200: TagBatchResponseSchema,
+          401: ErrorSchema,
+        },
+      },
+    )
+    .post(
+      "/tags/:tagName/pin",
+      async function pinTag({ params }) {
+        return (await ticktick.getClient()).tags.setPinned(params.tagName, true);
+      },
+      {
+        params: t.Object({
+          tagName: t.String(),
+        }),
+        detail: protectedDetail(config, "Tags", "Pin tag", "Pins a tag to the sidebar."),
+        response: {
+          200: t.Any(),
+          401: ErrorSchema,
+        },
+      },
+    )
+    .post(
+      "/tags/:tagName/unpin",
+      async function unpinTag({ params }) {
+        return (await ticktick.getClient()).tags.setPinned(params.tagName, false);
+      },
+      {
+        params: t.Object({
+          tagName: t.String(),
+        }),
+        detail: protectedDetail(config, "Tags", "Unpin tag", "Unpins a tag from the sidebar."),
+        response: {
+          200: t.Any(),
           401: ErrorSchema,
         },
       },
@@ -552,7 +644,29 @@ export function createApp(
       },
       {
         body: TaskMoveSchema,
-        detail: protectedDetail(config, "Tasks", "Move task between projects", "Moves a task to another project and refreshes its column."),
+        detail: protectedDetail(
+          config,
+          "Tasks",
+          "Move task between projects",
+          "Moves a task to another project and refreshes its column.",
+        ),
+        response: {
+          200: TaskSchema,
+          401: ErrorSchema,
+        },
+      },
+    )
+    .post(
+      "/tasks/:taskId/pin",
+      async function pinTask({ body, params }) {
+        return (await ticktick.getClient()).tasks.setPinned(params.taskId, body.pin as never);
+      },
+      {
+        params: t.Object({
+          taskId: t.String(),
+        }),
+        body: TaskPinSchema,
+        detail: protectedDetail(config, "Tasks", "Pin or unpin task", "Sets the pinned state of a task. Use false to unpin."),
         response: {
           200: TaskSchema,
           401: ErrorSchema,
@@ -1079,7 +1193,7 @@ export function createApp(
       },
     );
 
-  return app.use(api);
+  return baseApp.use(api);
 }
 
 function protectedDetail(config: AppConfig, tag: string, summary: string, description: string) {

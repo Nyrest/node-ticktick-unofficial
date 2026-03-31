@@ -130,6 +130,33 @@ export const ProjectBatchRequestSchema = t.Object({
   delete: t.Optional(t.Array(t.String())),
 });
 
+export const TagSchema = t.Object(
+  {
+    name: t.String(),
+    label: t.Optional(t.String()),
+    color: t.Optional(t.String()),
+    parent: t.Optional(NullableString),
+    sortOrder: t.Optional(t.Number()),
+    sortType: t.Optional(t.String()),
+    etag: t.Optional(t.String()),
+  },
+  { additionalProperties: true },
+);
+
+export const TagBatchRequestSchema = t.Object({
+  add: t.Optional(t.Array(TagSchema)),
+  update: t.Optional(t.Array(TagSchema)),
+  delete: t.Optional(t.Array(t.String())),
+});
+
+export const TagBatchResponseSchema = t.Object(
+  {
+    id2etag: t.Optional(t.Record(t.String(), t.String())),
+    id2error: t.Optional(UnknownRecord),
+  },
+  { additionalProperties: true },
+);
+
 export const TaskItemSchema = t.Object(
   {
     id: t.String(),
@@ -170,6 +197,7 @@ export const TaskSchema = t.Object(
     timeZone: t.Optional(t.String()),
     kind: t.Optional(t.Union([t.String(), t.Null()])),
     tags: t.Optional(t.Array(t.String())),
+    pinnedTime: t.Optional(NullableString),
     items: t.Optional(t.Array(TaskItemSchema)),
     reminders: t.Optional(t.Array(TaskReminderSchema)),
   },
@@ -217,6 +245,7 @@ export const TaskDraftSchema = t.Object(
     startDate: t.Optional(t.Union([t.String(), t.Null()])),
     tags: t.Optional(t.Array(t.String())),
     timeZone: t.Optional(t.String()),
+    pinnedTime: t.Optional(NullableString),
   },
   { additionalProperties: true },
 );
@@ -244,6 +273,10 @@ export const TaskStatusMutationSchema = t.Object({
 export const TaskMoveSchema = t.Object({
   taskId: t.String(),
   toProjectId: t.String(),
+});
+
+export const TaskPinSchema = t.Object({
+  pin: t.Union([t.Boolean(), t.String(), t.Number()]),
 });
 
 export const CompletedTasksQuerySchema = t.Object({

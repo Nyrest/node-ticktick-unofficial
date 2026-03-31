@@ -88,7 +88,8 @@ const client = await TickTickClient.create({
 | --- | --- | --- |
 | `client.user` | Account profile data | Read the current user profile |
 | `client.projects` | Projects and columns | List projects, inspect columns, and work with project structure |
-| `client.tasks` | Tasks and task sync data | Read, create, update, move, complete, reopen, and delete tasks |
+| `client.tags` | Tags management | List, create, update, rename, merge, and delete tags |
+| `client.tasks` | Tasks and task sync data | Read, create, update, move, complete, reopen, pin, and delete tasks |
 | `client.countdowns` | Countdowns and anniversaries | Manage countdown-style items and anniversary reminders |
 | `client.habits` | Habits, check-ins, and exports | Read habits, query check-ins, update check-ins, and export data |
 | `client.focus` | Focus session state and history | Control a running focus session and inspect related history |

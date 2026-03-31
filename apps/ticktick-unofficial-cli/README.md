@@ -74,7 +74,16 @@ Tasks:
 ```bash
 ticktick-unofficial-cli task list --project inbox
 ticktick-unofficial-cli task add "Write release notes" --project Work
+ticktick-unofficial-cli task pin "Write release notes"
 ticktick-unofficial-cli task complete "Write release notes"
+```
+
+Tags:
+
+```bash
+ticktick-unofficial-cli tag list
+ticktick-unofficial-cli tag add Important
+ticktick-unofficial-cli tag rename Important Critical
 ```
 
 Countdowns:

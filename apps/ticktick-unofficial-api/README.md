@@ -20,6 +20,7 @@ The API can expose:
 
 - account profile information
 - projects and columns
+- tags
 - tasks and task sync data
 - countdowns
 - habits and habit exports
@@ -94,6 +95,7 @@ Common data:
 
 - `GET /api/user/profile`
 - `GET /api/projects`
+- `GET /api/tags`
 - `GET /api/tasks`
 - `GET /api/countdowns`
 - `GET /api/habits`

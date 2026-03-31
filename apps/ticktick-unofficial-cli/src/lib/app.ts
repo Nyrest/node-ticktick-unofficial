@@ -18,6 +18,7 @@ import {
   type TickTickCountdownTimerMode,
   type TickTickCountdownType,
   TickTickTaskStatuses,
+  resolveTag,
   createFileSessionStore,
   formatTickTickHabitCheckinStatus,
   formatTickTickTaskPriority,
@@ -35,6 +36,8 @@ import {
   type TickTickTaskStatus,
   type TickTickTask,
 } from "node-ticktick-unofficial";
+
+export { resolveTag };
 
 export const APP_NAME = "ticktick-unofficial-cli";
 export const ENV_SERVICE = "TICKTICK_SERVICE";
@@ -373,30 +376,55 @@ function displayLabel(value: unknown, fallback: string): string {
   return typeof value === "string" && value.trim().length > 0 ? value : fallback;
 }
 
+/**
+ * Generic resolver for TickTick entities (projects, habits, tags, etc.)
+ */
+function resolveEntity<T>(
+  entities: T[],
+  reference: string,
+  options: {
+    type: string;
+    getId: (item: T) => string | undefined;
+    getName: (item: T) => string | undefined;
+  },
+): T {
+  const normalized = normalizeLabel(reference);
+
+  // 1. Try exact match on ID or Name
+  const exact = entities.find(
+    (item) =>
+      options.getId(item) === reference ||
+      normalizeLabel(options.getName(item)) === normalized,
+  );
+  if (exact) return exact;
+
+  // 2. Try partial match on Name
+  const matches = entities.filter((item) =>
+    normalizeLabel(options.getName(item)).includes(normalized),
+  );
+
+  if (matches.length === 1) return matches[0]!;
+
+  if (matches.length > 1) {
+    throw new CliError(
+      `${options.type} "${reference}" is ambiguous: ${matches
+        .map((item) => displayLabel(options.getName(item), options.getId(item) ?? ""))
+        .join(", ")}.`,
+    );
+  }
+
+  throw new CliError(`${options.type} "${reference}" was not found.`);
+}
+
 export function resolveProject(
   projects: TickTickProjectProfile[],
   reference: string,
 ): TickTickProjectProfile {
-  const normalized = normalizeLabel(reference);
-  const exact = projects.find(
-    (project) => project.id === reference || normalizeLabel(project.name) === normalized,
-  );
-  if (exact) {
-    return exact;
-  }
-
-  const matches = projects.filter((project) => normalizeLabel(project.name).includes(normalized));
-  if (matches.length === 1) {
-    return matches[0]!;
-  }
-
-  if (matches.length > 1) {
-    throw new CliError(
-      `Project "${reference}" is ambiguous: ${matches.map((project) => displayLabel(project.name, project.id)).join(", ")}.`,
-    );
-  }
-
-  throw new CliError(`Project "${reference}" was not found.`);
+  return resolveEntity(projects, reference, {
+    type: "Project",
+    getId: (p) => p.id,
+    getName: (p) => p.name,
+  });
 }
 
 export function resolveProjects(
@@ -407,45 +435,22 @@ export function resolveProjects(
 }
 
 export function resolveTask(tasks: TickTickTask[], reference: string): TickTickTask {
-  const normalized = normalizeLabel(reference);
-  const exact = tasks.find((task) => task.id === reference || normalizeLabel(task.title) === normalized);
-  if (exact) {
-    return exact;
-  }
-
-  const matches = tasks.filter((task) => normalizeLabel(task.title).includes(normalized));
-  if (matches.length === 1) {
-    return matches[0]!;
-  }
-
-  if (matches.length > 1) {
-    throw new CliError(
-      `Task "${reference}" is ambiguous: ${matches.map((task) => displayLabel(task.title, task.id)).join(", ")}.`,
-    );
-  }
-
-  throw new CliError(`Task "${reference}" was not found.`);
+  return resolveEntity(tasks, reference, {
+    type: "Task",
+    getId: (t) => t.id,
+    getName: (t) => t.title,
+  });
 }
 
-export function resolveCountdown(countdowns: TickTickCountdown[], reference: string): TickTickCountdown {
-  const normalized = normalizeLabel(reference);
-  const exact = countdowns.find((countdown) => countdown.id === reference || normalizeLabel(countdown.name) === normalized);
-  if (exact) {
-    return exact;
-  }
-
-  const matches = countdowns.filter((countdown) => normalizeLabel(countdown.name).includes(normalized));
-  if (matches.length === 1) {
-    return matches[0]!;
-  }
-
-  if (matches.length > 1) {
-    throw new CliError(
-      `Countdown "${reference}" is ambiguous: ${matches.map((countdown) => displayLabel(countdown.name, countdown.id)).join(", ")}.`,
-    );
-  }
-
-  throw new CliError(`Countdown "${reference}" was not found.`);
+export function resolveCountdown(
+  countdowns: TickTickCountdown[],
+  reference: string,
+): TickTickCountdown {
+  return resolveEntity(countdowns, reference, {
+    type: "Countdown",
+    getId: (c) => c.id,
+    getName: (c) => c.name,
+  });
 }
 
 export function resolveTasks(tasks: TickTickTask[], references: string[]): TickTickTask[] {
@@ -453,24 +458,71 @@ export function resolveTasks(tasks: TickTickTask[], references: string[]): TickT
 }
 
 export function resolveHabit(habits: TickTickHabit[], reference: string): TickTickHabit {
-  const normalized = normalizeLabel(reference);
-  const exact = habits.find((habit) => habit.id === reference || normalizeLabel(habit.name) === normalized);
-  if (exact) {
-    return exact;
+  return resolveEntity(habits, reference, {
+    type: "Habit",
+    getId: (h) => h.id,
+    getName: (h) => h.name,
+  });
+}
+
+export function looksLikeTaskId(input: string): boolean {
+  return /^[a-f0-9]{24}$/i.test(input.trim());
+}
+
+export async function resolveTaskByReference(
+  client: TickTickClient,
+  reference: string,
+  options: { includeCompleted?: boolean } = {},
+): Promise<TickTickTask> {
+  if (looksLikeTaskId(reference)) {
+    const task = await client.tasks.getById(reference, options);
+    if (task) {
+      return task;
+    }
   }
 
-  const matches = habits.filter((habit) => normalizeLabel(habit.name).includes(normalized));
-  if (matches.length === 1) {
-    return matches[0]!;
-  }
+  // Fallback to name resolution
+  const [openTasks, completedTasks, abandonedTasks] = await Promise.all([
+    client.tasks.list(),
+    options.includeCompleted
+      ? client.tasks.listCompleted({ status: "Completed" })
+      : Promise.resolve([]),
+    options.includeCompleted
+      ? client.tasks.listCompleted({ status: "Abandoned" })
+      : Promise.resolve([]),
+  ]);
 
-  if (matches.length > 1) {
-    throw new CliError(
-      `Habit "${reference}" is ambiguous: ${matches.map((habit) => displayLabel(habit.name, habit.id)).join(", ")}.`,
+  return resolveTask([...openTasks, ...completedTasks, ...abandonedTasks], reference);
+}
+
+export async function resolveTasksByReferences(
+  client: TickTickClient,
+  references: string[],
+  options: { includeCompleted?: boolean } = {},
+): Promise<TickTickTask[]> {
+  // Try fast path: all are IDs
+  if (references.every(looksLikeTaskId)) {
+    const tasks = await Promise.all(
+      references.map((id) => client.tasks.getById(id, options)),
     );
+    if (tasks.every((t) => t !== null)) {
+      return tasks as TickTickTask[];
+    }
   }
 
-  throw new CliError(`Habit "${reference}" was not found.`);
+  // Fallback: fetch all and resolve
+  const [openTasks, completedTasks, abandonedTasks] = await Promise.all([
+    client.tasks.list(),
+    options.includeCompleted
+      ? client.tasks.listCompleted({ status: "Completed" })
+      : Promise.resolve([]),
+    options.includeCompleted
+      ? client.tasks.listCompleted({ status: "Abandoned" })
+      : Promise.resolve([]),
+  ]);
+
+  const allTasks = [...openTasks, ...completedTasks, ...abandonedTasks];
+  return references.map((ref) => resolveTask(allTasks, ref));
 }
 
 export function indexProjects(projects: TickTickProjectProfile[]): Map<string, TickTickProjectProfile> {

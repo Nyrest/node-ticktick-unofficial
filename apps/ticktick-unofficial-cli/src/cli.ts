@@ -49,8 +49,11 @@ import {
   resolveProject,
   resolveProjects,
   resolveSessionPath,
+  resolveTag,
   resolveTask,
+  resolveTaskByReference,
   resolveTasks,
+  resolveTasksByReferences,
   serializeError,
   sortTasks,
   toDayKey,
@@ -171,10 +174,6 @@ function parseSortOrder(input: string | undefined): SortOrder {
   }
 
   throw new CliError(`Invalid sort order "${input}". Use asc or desc.`);
-}
-
-function looksLikeTaskId(input: string): boolean {
-  return /^[a-f0-9]{24}$/i.test(input.trim());
 }
 
 function parseCommaSeparatedStrings(input: string | undefined): string[] | undefined {
@@ -438,6 +437,312 @@ function createWhoamiCommand() {
             ].join("\n"),
         );
       }),
+    );
+}
+
+function createTagCommand() {
+  return new Crust("tag")
+    .flags(rootFlags)
+    .meta({
+      description: "Manage TickTick tags",
+    })
+    .command(
+      "list",
+      (command) =>
+        command
+          .meta({
+            description: "List tags",
+          })
+          .flags({
+            ...rootFlags,
+            search: {
+              type: "string",
+              description: "Filter tags by name",
+            },
+          } as const)
+          .run(
+            withRuntime(async ({ flags }, runtime) => {
+              const client = await requireClient(runtime);
+              const tags = await client.tags.list();
+              const search = flags.search?.toLowerCase();
+              const filtered = search
+                ? tags.filter((tag) => tag.name.toLowerCase().includes(search))
+                : tags;
+
+              printOutput(
+                runtime,
+                {
+                  ok: true,
+                  count: filtered.length,
+                  tags: filtered,
+                },
+                () => renderTagTable(filtered),
+              );
+            }),
+          ),
+    )
+    .command(
+      "show",
+      (command) =>
+        command
+          .meta({
+            description: "Show one tag",
+          })
+          .args([{ name: "tag", type: "string", required: true }] as const)
+          .run(
+            withRuntime(async ({ args }, runtime) => {
+              const client = await requireClient(runtime);
+              const tags = await client.tags.list();
+              const tag = resolveTag(tags, args.tag);
+
+              printOutput(
+                runtime,
+                {
+                  ok: true,
+                  tag,
+                },
+                () => renderTagDetails(tag),
+              );
+            }),
+          ),
+    )
+    .command(
+      "add",
+      (command) =>
+        command
+          .meta({
+            description: "Create a tag",
+          })
+          .flags({
+            ...rootFlags,
+            color: {
+              type: "string",
+              description: "Tag color, for example #4F86F7",
+            },
+            parent: {
+              type: "string",
+              description: "Parent tag name",
+            },
+          } as const)
+          .args([{ name: "label", type: "string", variadic: true }] as const)
+          .run(
+            withRuntime(async ({ args, flags }, runtime) => {
+              const client = await requireClient(runtime);
+              const label = ensureValue(joinWords(args.label), "Tag label");
+              const result = await client.tags.create({
+                label,
+                name: label.toLowerCase(),
+                color: flags.color ?? undefined,
+                parent: flags.parent ?? undefined,
+              });
+
+              printOutput(
+                runtime,
+                {
+                  ok: true,
+                  result,
+                },
+                () => `Created tag ${label}.`,
+              );
+            }),
+          ),
+    )
+    .command(
+      "edit",
+      (command) =>
+        command
+          .meta({
+            description: "Edit a tag",
+          })
+          .flags({
+            ...rootFlags,
+            color: {
+              type: "string",
+              description: "Tag color",
+            },
+            label: {
+              type: "string",
+              description: "New label for the tag",
+            },
+            parent: {
+              type: "string",
+              description: "New parent tag name",
+            },
+          } as const)
+          .args([{ name: "tag", type: "string", required: true }] as const)
+          .run(
+            withRuntime(async ({ args, flags }, runtime) => {
+              const client = await requireClient(runtime);
+              const tags = await client.tags.list();
+              const current = resolveTag(tags, args.tag);
+
+              const updated: TickTickTag = {
+                ...current,
+                ...(flags.label ? { label: flags.label } : null),
+                ...(flags.color !== undefined ? { color: flags.color } : null),
+                ...(flags.parent !== undefined ? { parent: flags.parent || null } : null),
+              };
+
+              const result = await client.tags.update(updated);
+
+              printOutput(
+                runtime,
+                {
+                  ok: true,
+                  result,
+                },
+                () => `Updated tag ${current.name}.`,
+              );
+            }),
+          ),
+    )
+    .command(
+      "rename",
+      (command) =>
+        command
+          .meta({
+            description: "Rename a tag",
+          })
+          .args([
+            { name: "tag", type: "string", required: true },
+            { name: "new-label", type: "string", required: true, variadic: true },
+          ] as const)
+          .run(
+            withRuntime(async ({ args }, runtime) => {
+              const client = await requireClient(runtime);
+              const tags = await client.tags.list();
+              const current = resolveTag(tags, args.tag);
+              const newLabel = joinWords(args["new-label"]);
+              const result = await client.tags.rename(current.name, newLabel);
+
+              printOutput(
+                runtime,
+                {
+                  ok: true,
+                  result,
+                },
+                () => `Renamed tag ${current.name} to ${newLabel}.`,
+              );
+            }),
+          ),
+    )
+    .command(
+      "merge",
+      (command) =>
+        command
+          .meta({
+            description: "Merge a tag into another",
+          })
+          .args([
+            { name: "tag", type: "string", required: true },
+            { name: "target-tag", type: "string", required: true },
+          ] as const)
+          .run(
+            withRuntime(async ({ args }, runtime) => {
+              const client = await requireClient(runtime);
+              const tags = await client.tags.list();
+              const current = resolveTag(tags, args.tag);
+              const target = resolveTag(tags, args["target-tag"]);
+              const result = await client.tags.merge(current.name, target.name);
+
+              printOutput(
+                runtime,
+                {
+                  ok: true,
+                  result,
+                },
+                () => `Merged tag ${current.name} into ${target.name}.`,
+              );
+            }),
+          ),
+    )
+    .command(
+      "pin",
+      (command) =>
+        command
+          .meta({
+            description: "Pin a tag to sidebar",
+          })
+          .args([{ name: "tag", type: "string", required: true }] as const)
+          .run(
+            withRuntime(async ({ args }, runtime) => {
+              const client = await requireClient(runtime);
+              const tags = await client.tags.list();
+              const tag = resolveTag(tags, args.tag);
+              await client.tags.setPinned(tag.name, true);
+
+              printOutput(
+                runtime,
+                {
+                  ok: true,
+                  tag,
+                },
+                () => `Pinned tag ${tag.name} to sidebar.`,
+              );
+            }),
+          ),
+    )
+    .command(
+      "unpin",
+      (command) =>
+        command
+          .meta({
+            description: "Unpin a tag from sidebar",
+          })
+          .args([{ name: "tag", type: "string", required: true }] as const)
+          .run(
+            withRuntime(async ({ args }, runtime) => {
+              const client = await requireClient(runtime);
+              const tags = await client.tags.list();
+              const tag = resolveTag(tags, args.tag);
+              await client.tags.setPinned(tag.name, false);
+
+              printOutput(
+                runtime,
+                {
+                  ok: true,
+                  tag,
+                },
+                () => `Unpinned tag ${tag.name} from sidebar.`,
+              );
+            }),
+          ),
+    )
+    .command(
+      "delete",
+      (command) =>
+        command
+          .meta({
+            description: "Delete one or more tags",
+          })
+          .flags({
+            ...rootFlags,
+            y: {
+              type: "boolean",
+              description: "Skip confirmation",
+            },
+          } as const)
+          .args([{ name: "tags", type: "string", required: true, variadic: true }] as const)
+          .run(
+            withRuntime(async ({ args, flags }, runtime) => {
+              const client = await requireClient(runtime);
+              await requireConfirmation(flags.y ?? false, "Use -y to delete tags without a prompt.");
+
+              const tags = await client.tags.list();
+              const selected = args.tags.map((reference) => resolveTag(tags, reference));
+              const result = await client.tags.delete(selected.map((tag) => tag.name));
+
+              printOutput(
+                runtime,
+                {
+                  tags: selected,
+                  ok: true,
+                  result,
+                },
+                () => `Deleted ${selected.length} tag${selected.length === 1 ? "" : "s"}.`,
+              );
+            }),
+          ),
     );
 }
 
@@ -878,13 +1183,8 @@ function createTaskCommand() {
           .run(
             withRuntime(async ({ args }, runtime) => {
               const client = await requireClient(runtime);
-              const [projects, tasks, completedTasks, abandonedTasks] = await Promise.all([
-                client.projects.list(),
-                client.tasks.list(),
-                client.tasks.listCompleted({ status: "Completed" }),
-                client.tasks.listCompleted({ status: "Abandoned" }),
-              ]);
-              const task = resolveTask([...tasks, ...completedTasks, ...abandonedTasks], args.task);
+              const projects = await client.projects.list();
+              const task = await resolveTaskByReference(client, args.task, { includeCompleted: true });
 
               printOutput(
                 runtime,
@@ -978,7 +1278,7 @@ function createTaskCommand() {
       (command) =>
         command
           .meta({
-            description: "Edit a task field",
+            description: "Edit a task field by id",
           })
           .args([
             { name: "field", type: "string", required: true },
@@ -989,16 +1289,8 @@ function createTaskCommand() {
             withRuntime(async ({ args }, runtime) => {
               const client = await requireClient(runtime);
               const field = args.field.toLowerCase();
-              const [projects, tasks, completedTasks, abandonedTasks] = await Promise.all([
-                client.projects.list(),
-                client.tasks.list(),
-                field === "status" ? client.tasks.listCompleted({ status: "Completed" }) : Promise.resolve([]),
-                field === "status" ? client.tasks.listCompleted({ status: "Abandoned" }) : Promise.resolve([]),
-              ]);
-              const task = resolveTask(
-                field === "status" ? [...tasks, ...completedTasks, ...abandonedTasks] : tasks,
-                args.task,
-              );
+              const task = await resolveTaskByReference(client, args.task, { includeCompleted: true });
+
               const value = joinWords(args.value);
               const nextTask: TickTickTask = { ...task };
 
@@ -1013,7 +1305,11 @@ function createTaskCommand() {
                 nextTask.completedTime =
                   nextTask.status === TickTickTaskStatuses.open ? null : new Date().toISOString();
               }
-              else if (field === "project") nextTask.projectId = resolveProject(projects, value).id;
+              else if (field === "project") {
+                const projects = await client.projects.list();
+                nextTask.projectId = resolveProject(projects, value).id;
+              }
+              else if (field === "tag" || field === "tags") nextTask.tags = parseCommaSeparatedStrings(value) ?? [];
               else throw new CliError(`Unsupported task field "${args.field}".`);
 
               const updated =
@@ -1057,8 +1353,8 @@ function createTaskCommand() {
           .run(
             withRuntime(async ({ args, flags }, runtime) => {
               const client = await requireClient(runtime);
-              const [projects, tasks] = await Promise.all([client.projects.list(), client.tasks.list()]);
-              const task = resolveTask(tasks, args.task);
+              const projects = await client.projects.list();
+              const task = await resolveTaskByReference(client, args.task);
               const project = resolveProject(projects, flags.project);
               const updated = await client.tasks.move(task.id, project.id);
 
@@ -1090,7 +1386,7 @@ function createTaskCommand() {
               }
 
               const client = await requireClient(runtime);
-              const tasks = resolveTasks(await client.tasks.list(), references);
+              const tasks = await resolveTasksByReferences(client, references);
               const updated = await Promise.all(
                 tasks.map((task) =>
                   client.tasks.setStatus({
@@ -1127,7 +1423,7 @@ function createTaskCommand() {
               }
 
               const client = await requireClient(runtime);
-              const tasks = resolveTasks(await client.tasks.list(), references);
+              const tasks = await resolveTasksByReferences(client, references);
               const updated = await Promise.all(
                 tasks.map((task) =>
                   client.tasks.setStatus({
@@ -1164,7 +1460,7 @@ function createTaskCommand() {
               }
 
               const client = await requireClient(runtime);
-              const tasks = resolveTasks(await client.tasks.list(), references);
+              const tasks = await resolveTasksByReferences(client, references);
               const updated = await Promise.all(
                 tasks.map((task) =>
                   client.tasks.setStatus({
@@ -1201,31 +1497,16 @@ function createTaskCommand() {
               }
 
               const client = await requireClient(runtime);
-              const [completedTasks, abandonedTasks] = await Promise.all([
-                client.tasks.listCompleted({ status: "Completed" }),
-                client.tasks.listCompleted({ status: "Abandoned" }),
-              ]);
-              const closedTasks = [...completedTasks, ...abandonedTasks];
-              const taskIds = references.map((reference) => {
-                try {
-                  return resolveTask(closedTasks, reference).id;
-                } catch (error) {
-                  if (looksLikeTaskId(reference)) {
-                    return reference;
-                  }
-
-                  throw error;
-                }
-              });
+              const tasks = await resolveTasksByReferences(client, references, { includeCompleted: true });
               const updated: TickTickTask[] = [];
 
-              for (const taskId of taskIds) {
+              for (const task of tasks) {
                 let result: TickTickTask | undefined;
 
                 for (let attempt = 0; attempt < 3; attempt += 1) {
                   try {
                     result = await client.tasks.setStatus({
-                      id: taskId,
+                      id: task.id,
                       status: TickTickTaskStatuses.open,
                     });
                     break;
@@ -1254,6 +1535,70 @@ function createTaskCommand() {
           ),
     )
     .command(
+      "pin",
+      (command) =>
+        command
+          .meta({
+            description: "Pin one or more tasks",
+          })
+          .args([{ name: "tasks", type: "string", variadic: true }] as const)
+          .run(
+            withRuntime(async ({ args }, runtime) => {
+              const references = args.tasks ?? [];
+              if (references.length === 0) {
+                throw new CliError("Provide at least one task reference.");
+              }
+
+              const client = await requireClient(runtime);
+              const tasks = await resolveTasksByReferences(client, references);
+              const updated = await Promise.all(
+                tasks.map((task) => client.tasks.setPinned(task.id, true)),
+              );
+
+              printOutput(
+                runtime,
+                {
+                  ok: true,
+                  tasks: updated,
+                },
+                () => `Pinned ${updated.length} task(s).`,
+              );
+            }),
+          ),
+    )
+    .command(
+      "unpin",
+      (command) =>
+        command
+          .meta({
+            description: "Unpin one or more tasks",
+          })
+          .args([{ name: "tasks", type: "string", variadic: true }] as const)
+          .run(
+            withRuntime(async ({ args }, runtime) => {
+              const references = args.tasks ?? [];
+              if (references.length === 0) {
+                throw new CliError("Provide at least one task reference.");
+              }
+
+              const client = await requireClient(runtime);
+              const tasks = await resolveTasksByReferences(client, references);
+              const updated = await Promise.all(
+                tasks.map((task) => client.tasks.setPinned(task.id, false)),
+              );
+
+              printOutput(
+                runtime,
+                {
+                  ok: true,
+                  tasks: updated,
+                },
+                () => `Unpinned ${updated.length} task(s).`,
+              );
+            }),
+          ),
+    )
+    .command(
       "remove",
       (command) =>
         command
@@ -1277,16 +1622,16 @@ function createTaskCommand() {
               }
 
               const client = await requireClient(runtime);
-              const tasks = resolveTasks(await client.tasks.list(), references);
+              const tasks = await resolveTasksByReferences(client, references);
               const approved = await requireConfirmation(
                 flags.yes,
-                `Move ${tasks.length} task(s) to trash: ${tasks.map((task) => task.title).join(", ")}?`,
+                `Move ${tasks.length} task(s) to trash: ${tasks.map((t) => t.title).join(", ")}?`,
               );
               if (!approved) {
                 return;
               }
 
-              const removed = await client.tasks.delete(tasks.map((task) => task.id));
+              const removed = await client.tasks.delete(tasks.map((t) => t.id));
 
               printOutput(
                 runtime,
@@ -1323,16 +1668,16 @@ function createTaskCommand() {
               }
 
               const client = await requireClient(runtime);
-              const tasks = resolveTasks(await client.tasks.list(), references);
+              const tasks = await resolveTasksByReferences(client, references);
               const approved = await requireConfirmation(
                 flags.yes,
-                `Move ${tasks.length} task(s) to trash: ${tasks.map((task) => task.title).join(", ")}?`,
+                `Move ${tasks.length} task(s) to trash: ${tasks.map((t) => t.title).join(", ")}?`,
               );
               if (!approved) {
                 return;
               }
 
-              const removed = await client.tasks.delete(tasks.map((task) => task.id));
+              const removed = await client.tasks.delete(tasks.map((t) => t.id));
 
               printOutput(
                 runtime,
@@ -2320,6 +2665,7 @@ description: "Human-friendly and automation-friendly CLI for TickTick using node
   .command(createLoginCommand())
   .command(createLogoutCommand())
   .command(createWhoamiCommand())
+  .command(createTagCommand())
   .command(createProjectCommand())
   .command(createTaskCommand())
   .command(createFocusCommand())
