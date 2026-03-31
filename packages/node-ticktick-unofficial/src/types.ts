@@ -100,8 +100,32 @@ export interface TickTickPasswordLoginResponse {
 }
 
 export interface TickTickUserProfile {
-  userId?: string;
+  etimestamp?: string | null;
   username?: string;
+  siteDomain?: string;
+  createdCampaign?: string;
+  createdDeviceInfo?: unknown | null;
+  filledPassword?: boolean;
+  accountDomain?: string | null;
+  extenalId?: string | null;
+  email?: string | null;
+  verifiedEmail?: boolean;
+  fakedEmail?: boolean;
+  phone?: string | null;
+  name?: string | null;
+  givenName?: string | null;
+  familyName?: string | null;
+  link?: string | null;
+  picture?: string;
+  gender?: number | null;
+  locale?: string;
+  userCode?: string;
+  verCode?: string | null;
+  verKey?: string | null;
+  externalId?: string | null;
+  phoneWithoutCountryCode?: string | null;
+  displayName?: string;
+  userId?: string;
   inboxId?: string;
   [key: string]: unknown;
 }
