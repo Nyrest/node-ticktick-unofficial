@@ -16,7 +16,7 @@ import {
   TickTickTaskStatuses,
   TickTickTaskStatusInputHelp,
 } from "node-ticktick-unofficial";
-import type { TickTickClient, TickTickCountdown, TickTickHabit, TickTickTask } from "node-ticktick-unofficial";
+import type { TickTickClient, TickTickCountdown, TickTickHabit, TickTickTag, TickTickTask } from "node-ticktick-unofficial";
 
 import {
   APP_NAME,
@@ -27,6 +27,7 @@ import {
   indexProjects,
   loginWithCredentials,
   logout,
+  looksLikeTaskId,
   parseDateInput,
   formatHabitCheckinStatusLabel,
   formatCountdownDayCalculationModeLabel,
@@ -75,6 +76,8 @@ import {
   renderProjectDetails,
   renderProjectTable,
   renderStatistics,
+  renderTagDetails,
+  renderTagTable,
   renderTaskDetails,
   renderTaskTable,
 } from "./lib/output.ts";
