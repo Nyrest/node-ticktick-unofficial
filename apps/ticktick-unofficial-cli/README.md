@@ -49,7 +49,9 @@ export TICKTICK_PASSWORD="your-password"
 Optional auth-related settings:
 
 - `TICKTICK_SERVICE` to switch between `ticktick` and `dida365`
-- `TICKTICK_SESSION_PATH` to choose where the saved session lives
+- `TICKTICK_SESSION_PATH` to override the default persisted session location
+
+By default, CLI config is stored with `@crustjs/store` under the platform config directory, and the saved TickTick session is stored with `@crustjs/store` under the platform state directory. If you set `TICKTICK_SESSION_PATH` or pass `--session`, the CLI uses that explicit file path instead.
 
 Useful account commands:
 
@@ -134,11 +136,28 @@ This is especially useful for:
 - local automations
 - AI agents
 
+## Agent Skill
+
+The CLI can install an agent skill generated from its Crust command definitions:
+
+```bash
+ticktick-unofficial-cli skill
+```
+
+Update already-installed skills without changing selection:
+
+```bash
+ticktick-unofficial-cli skill update
+```
+
+The generated skill documents the current command tree for AI coding assistants. Use `--json` in agent workflows when another tool needs stable structured output.
+
 ## How It Behaves
 
 - normal mode prints readable tables and summaries
 - `--json` prints structured output
 - many commands accept an ID, exact name, or unique partial match
+- mistyped subcommands get "Did you mean?" suggestions
 - destructive operations ask for confirmation unless you pass `-y`
 
 When `focus start` runs in an interactive terminal without `--detach`, it opens a live focus view. The main keys are:

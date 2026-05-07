@@ -324,13 +324,13 @@ try {
   const taskMove = await runJson(["task", "move", taskIdPrimary, "--project", projectIdSecondary]);
   expectOk(taskMove, "task move");
 
-  const taskLs = await waitForJson(
-    "task ls to include moved task",
-    ["task", "ls", "--project", projectIdSecondary, "--all", "--limit", "20"],
+  const taskListMoved = await waitForJson(
+    "task list to include moved task",
+    ["task", "list", "--project", projectIdSecondary, "--all", "--limit", "20"],
     (payload) =>
-      asArray<JsonRecord>(payload.tasks, "task ls tasks").some((task) => task.id === taskIdPrimary),
+      asArray<JsonRecord>(payload.tasks, "task list tasks").some((task) => task.id === taskIdPrimary),
   );
-  expectOk(taskLs, "task ls");
+  expectOk(taskListMoved, "task list moved");
 
   const taskAbandon = await runJson(["task", "abandon", taskIdPrimary]);
   expectOk(taskAbandon, "task abandon");

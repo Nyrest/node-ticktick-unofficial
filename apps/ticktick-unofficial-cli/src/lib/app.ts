@@ -1,4 +1,4 @@
-import { isAbsolute, join } from "node:path";
+import { extname, isAbsolute, join } from "node:path";
 
 import { configDir, createStore, stateDir } from "@crustjs/store";
 import { createStyle, type StyleInstance } from "@crustjs/style";
@@ -33,6 +33,7 @@ import {
   type TickTickProjectProfile,
   type TickTickSerializedSession,
   type TickTickServiceName,
+  type TickTickSessionStore,
   type TickTickTaskPriority,
   type TickTickTaskStatus,
   type TickTickTask,
@@ -46,6 +47,7 @@ export const ENV_SESSION_PATH = "TICKTICK_SESSION_PATH";
 export const ENV_USERNAME = "TICKTICK_USERNAME";
 export const ENV_PASSWORD = "TICKTICK_PASSWORD";
 export const DEFAULT_SESSION_FILE = "session.json";
+export const DEFAULT_SESSION_STORE_NAME = "session";
 
 export type SharedFlags = {
   color?: boolean;
@@ -70,6 +72,7 @@ export interface RuntimeContext {
   readonly flags: SharedFlags;
   readonly json: boolean;
   readonly session: TickTickSerializedSession | null;
+  readonly sessionStore: TickTickSessionStore;
   readonly service: TickTickServiceName;
   readonly sessionPath: string;
   readonly style: StyleInstance;
@@ -95,6 +98,51 @@ const createAuthStore = () =>
     },
   });
 
+function createSessionPayloadStore(name = DEFAULT_SESSION_STORE_NAME, dirPath = stateDir(APP_NAME)) {
+  return createStore({
+    dirPath,
+    name,
+    fields: {
+      payload: {
+        type: "string",
+      },
+    },
+  });
+}
+
+function createStateSessionStore(name = DEFAULT_SESSION_STORE_NAME, dirPath = stateDir(APP_NAME)): TickTickSessionStore {
+  const store = createSessionPayloadStore(name, dirPath);
+  const storeFilePath = join(dirPath, `${name}.json`);
+
+  return {
+    async load(): Promise<TickTickSerializedSession | null> {
+      const current = await store.read();
+      if (!current.payload) {
+        return null;
+      }
+
+      try {
+        return JSON.parse(current.payload) as TickTickSerializedSession;
+      } catch {
+        throw new CliError(`Invalid TickTick session payload in ${storeFilePath}. Clear it with \`${APP_NAME} logout\` and log in again.`);
+      }
+    },
+    async save(session: TickTickSerializedSession): Promise<void> {
+      await store.write({
+        payload: JSON.stringify(session, null, 2),
+      });
+    },
+    async clear(): Promise<void> {
+      await store.reset();
+    },
+  };
+}
+
+export interface SessionPersistence {
+  readonly path: string;
+  readonly store: TickTickSessionStore;
+}
+
 export class CliError extends Error {
   constructor(message: string) {
     super(message);
@@ -105,8 +153,8 @@ export class CliError extends Error {
 export async function createRuntime(flags: SharedFlags): Promise<RuntimeContext> {
   const authStore = createAuthStore();
   const config = await authStore.read();
-  const sessionPath = resolveSessionPath(flags.session ?? process.env[ENV_SESSION_PATH]);
-  const session = await loadStoredSession(sessionPath);
+  const sessionPersistence = resolveSessionPersistence(flags.session ?? process.env[ENV_SESSION_PATH]);
+  const session = await loadStoredSession(sessionPersistence.store);
   const service = resolveService(flags.service ?? process.env[ENV_SERVICE], session?.service ?? config.service);
   const style = createStyle({ mode: flags.color === false ? "never" : "auto" });
 
@@ -116,24 +164,52 @@ export async function createRuntime(flags: SharedFlags): Promise<RuntimeContext>
     flags,
     json: Boolean(flags.json),
     session,
+    sessionStore: sessionPersistence.store,
     service,
-    sessionPath,
+    sessionPath: sessionPersistence.path,
     style,
   };
 }
 
-async function loadStoredSession(sessionPath: string): Promise<TickTickSerializedSession | null> {
-  return createFileSessionStore(sessionPath).load();
+async function loadStoredSession(sessionStore: TickTickSessionStore): Promise<TickTickSerializedSession | null> {
+  return sessionStore.load();
 }
 
 export function resolveSessionPath(input: string | undefined): string {
+  return resolveSessionPersistence(input).path;
+}
+
+function normalizeSessionStoreName(input: string | undefined): string | null {
   if (!input) {
-    return join(stateDir(APP_NAME), DEFAULT_SESSION_FILE);
+    return DEFAULT_SESSION_STORE_NAME;
   }
 
-  return isAbsolute(input) || input.includes("/") || input.includes("\\")
-    ? input
-    : join(stateDir(APP_NAME), input);
+  if (input.includes("/") || input.includes("\\") || isAbsolute(input)) {
+    return null;
+  }
+
+  const ext = extname(input);
+  if (ext && ext !== ".json") {
+    return null;
+  }
+
+  return ext === ".json" ? input.slice(0, -ext.length) : input;
+}
+
+export function resolveSessionPersistence(input: string | undefined): SessionPersistence {
+  const storeName = normalizeSessionStoreName(input);
+  if (storeName) {
+    return {
+      path: join(stateDir(APP_NAME), `${storeName}.json`),
+      store: createStateSessionStore(storeName),
+    };
+  }
+
+  const filePath = input ?? join(stateDir(APP_NAME), DEFAULT_SESSION_FILE);
+  return {
+    path: filePath,
+    store: createFileSessionStore(filePath),
+  };
 }
 
 export function resolveService(input: string | undefined, fallback: string): TickTickServiceName {
@@ -164,7 +240,7 @@ export async function loginWithCredentials(
   const client = await TickTickClient.create({
     service,
     credentials,
-    sessionStore: createFileSessionStore(runtime.sessionPath),
+    sessionStore: runtime.sessionStore,
     timezone: runtime.flags.timezone,
   });
 
@@ -184,7 +260,7 @@ export async function requireClient(
   const client = await TickTickClient.create({
     service: runtime.service,
     credentials: credentials ?? undefined,
-    sessionStore: createFileSessionStore(runtime.sessionPath),
+    sessionStore: runtime.sessionStore,
     timezone: runtime.flags.timezone,
   });
 
@@ -209,7 +285,7 @@ export async function requireClient(
 export async function logout(runtime: RuntimeContext): Promise<void> {
   const client = await TickTickClient.create({
     service: runtime.service,
-    sessionStore: createFileSessionStore(runtime.sessionPath),
+    sessionStore: runtime.sessionStore,
     timezone: runtime.flags.timezone,
   });
 
@@ -224,18 +300,6 @@ export function withService(runtime: RuntimeContext, service: TickTickServiceNam
   return {
     ...runtime,
     service,
-  };
-}
-
-export function withSessionPath(
-  runtime: RuntimeContext,
-  sessionPath: string,
-  session: TickTickSerializedSession | null = null,
-): RuntimeContext {
-  return {
-    ...runtime,
-    session,
-    sessionPath,
   };
 }
 

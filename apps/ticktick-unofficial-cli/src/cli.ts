@@ -5,7 +5,8 @@ import packageJson from "../package.json" with { type: "json" };
 
 import { Crust, type CommandNode } from "@crustjs/core";
 import { confirm, input, password, select, spinner } from "@crustjs/prompts";
-import { helpPlugin, renderHelp } from "@crustjs/plugins";
+import { autoCompletePlugin, helpPlugin, renderHelp } from "@crustjs/plugins";
+import { skillPlugin } from "@crustjs/skills";
 import {
   TickTickHabitCheckinStatusInputHelp,
   TickTickCountdownDayCalculationModeInputHelp,
@@ -50,6 +51,7 @@ import {
   resolveHabit,
   resolveProject,
   resolveProjects,
+  resolveSessionPersistence,
   resolveSessionPath,
   resolveTag,
   resolveTask,
@@ -60,7 +62,6 @@ import {
   sortTasks,
   toDayKey,
   withService,
-  withSessionPath,
   type SortOrder,
   type TaskSortField,
   type RuntimeContext,
@@ -342,7 +343,7 @@ function createLoginCommand() {
       },
       "save-as": {
         type: "string",
-        description: "Save the session under this file name or full file path",
+        description: "Save the session under this store name or explicit file path",
       },
     } as const)
     .run(
@@ -352,8 +353,22 @@ function createLoginCommand() {
         }
 
         const selectedService = await chooseLoginService(runtime);
-        const loginSessionPath = resolveSessionPath(flags["save-as"] ?? flags.session ?? runtime.sessionPath);
-        const loginRuntime = withService(withSessionPath(runtime, loginSessionPath), selectedService);
+        const sessionOverride = flags["save-as"] ?? flags.session;
+        const sessionPersistence = sessionOverride ? resolveSessionPersistence(sessionOverride) : null;
+        const loginRuntime = withService(
+          sessionPersistence
+            ? {
+                ...runtime,
+                session: null,
+                sessionPath: sessionPersistence.path,
+                sessionStore: sessionPersistence.store,
+              }
+            : {
+                ...runtime,
+                session: null,
+              },
+          selectedService,
+        );
         const service = selectedService === "ticktick" ? "TickTick" : "Dida365";
         const username =
           flags.username ??
@@ -1181,7 +1196,6 @@ function createTaskCommand() {
       description: "Manage tasks",
     })
     .command(listCommand("list"))
-    .command(listCommand("ls"))
     .command(
       "show",
       (command) =>
@@ -2736,10 +2750,24 @@ function createCountdownCommand() {
 
 cli = new Crust(APP_NAME)
   .meta({
-description: "Human-friendly and automation-friendly CLI for TickTick using node-ticktick-unofficial.",
+    description: "Human-friendly and automation-friendly CLI for TickTick using node-ticktick-unofficial.",
   })
   .flags(rootFlags)
+  .use(autoCompletePlugin({ mode: "help" }))
   .use(helpPlugin())
+  .use(
+    skillPlugin({
+      version: packageJson.version,
+      allowedTools: "Bash(ticktick-unofficial-cli *) Bash(bun run --cwd apps/ticktick-unofficial-cli start -- *)",
+      compatibility: "Requires ticktick-unofficial-cli on PATH, or this repo with Bun installed.",
+      instructions: [
+        "Prefer --json for automation and AI-agent workflows that need stable machine-readable output.",
+        "Do not print, store, or commit TickTick credentials, session JSON, cookies, or token values.",
+        "Use login, logout, and whoami for session management; default persistence uses Crust store state, and TICKTICK_SESSION_PATH or --session can override it.",
+        "For destructive commands, pass the documented confirmation flags only when the caller explicitly asked to mutate data.",
+      ],
+    }),
+  )
   .command(createHelpCommand())
   .command(createLoginCommand())
   .command(createLogoutCommand())
