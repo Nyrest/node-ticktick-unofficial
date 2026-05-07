@@ -292,7 +292,9 @@ export const TaskPinSchema = t.Object({
 });
 
 export const CompletedTasksQuerySchema = t.Object({
+  from: t.Optional(t.String()),
   to: t.Optional(t.String()),
+  limit: t.Optional(t.Number()),
   status: t.Optional(t.Union([t.Literal("Completed"), t.Literal("Abandoned")])),
 });
 

@@ -43,7 +43,7 @@ const client = await TickTickClient.create({
 });
 
 const profile = await client.user.getProfile();
-const tasks = await client.tasks.list();
+const tasks = await client.tasks.listActive();
 
 console.log(profile.username, tasks.length);
 ```
@@ -70,7 +70,11 @@ await client.tasks.delete(task.id); // { id, deleted: true }
 
 Resource modules follow the same shape where the upstream API allows it:
 
-- `list()` returns resource arrays.
+- `list()` returns resource arrays in modules where the resource has a single obvious listing scope.
+- `tasks.listActive()` returns active, non-deleted tasks from the sync payload.
+- `tasks.listClosed({ from, to, limit, status })` returns global closed tasks. Without `status`, it uses `GET /api/v2/project/all/completedInAll/` and returns both completed and abandoned tasks. With `status`, it uses `GET /api/v2/project/all/closed`.
+- `tasks.listProjectClosed(projectId, { from, to, limit, status })` does the same at project scope. Without `status`, TickTick's project `completed` endpoint returns both completed and abandoned tasks; with `status`, the project `closed` endpoint applies the filter.
+- `tasks.sync(checkpoint?)` returns the TickTick sync payload from `GET /api/v2/batch/check/{checkpoint}`.
 - `tasks.get(id, options?)` calls `GET /api/v2/task/{id}`. `projectId` and `withChildren` are passed through when provided.
 - Resources without a direct single-item Web API expose `findById(id)`, which searches the current `list()` result.
 - `projects.listTasks(id)` calls `GET /api/v2/project/{id}/tasks` and returns that project's active tasks.
@@ -80,6 +84,8 @@ Resource modules follow the same shape where the upstream API allows it:
 - `batch(payload)` is kept for advanced callers who need the raw TickTick batch response.
 
 Direct `get(id)` is only used when TickTick exposes a real single-item endpoint. List-based lookup is named `findById(id)` so callers can see the cost and freshness tradeoff in the method name.
+
+Task listing is intentionally explicit: use `tasks.sync()` for the raw sync payload, `tasks.listActive()` for active tasks, `tasks.listClosed()` for completed and abandoned tasks, and `tasks.listCompleted()` / `tasks.listAbandoned()` for one closed status.
 
 ## Session Handling
 

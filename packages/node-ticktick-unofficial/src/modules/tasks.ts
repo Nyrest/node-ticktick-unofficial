@@ -4,6 +4,7 @@ import type { TickTickClient } from "../client.js";
 import { TickTickApiError, TickTickNotFoundError } from "../errors.js";
 import { TickTickTaskPriorities, TickTickTaskStatuses, parseTickTickTaskPriority, parseTickTickTaskStatus } from "../semantic.js";
 import type {
+  TickTickClosedTaskOptions,
   TickTickCompletedTaskOptions,
   TickTickDeleteResult,
   TickTickTask,
@@ -20,14 +21,14 @@ import type {
 export class TickTickTasksApi {
   constructor(private readonly client: TickTickClient) {}
 
-  getAll(): Promise<TickTickTaskSyncResponse> {
+  sync(checkpoint = 0): Promise<TickTickTaskSyncResponse> {
     return this.client.requestJson<TickTickTaskSyncResponse>({
-      path: "/api/v2/batch/check/0",
+      path: `/api/v2/batch/check/${checkpoint}`,
     });
   }
 
-  async list(): Promise<TickTickTask[]> {
-    const response = await this.getAll();
+  async listActive(): Promise<TickTickTask[]> {
+    const response = await this.sync();
     return response.syncTaskBean?.update ?? [];
   }
 
@@ -65,26 +66,37 @@ export class TickTickTasksApi {
     throw new TickTickNotFoundError("Task", taskId);
   }
 
-  listCompleted(options: TickTickCompletedTaskOptions = {}): Promise<TickTickTask[]> {
-    const params = new URLSearchParams({
-      from: "",
-      status: options.status ?? "Completed",
-    });
+  listClosed(options: TickTickClosedTaskOptions = {}): Promise<TickTickTask[]> {
+    const params = this.#buildClosedTaskParams(options);
+    const path = options.status
+      ? `/api/v2/project/all/closed?${params.toString()}`
+      : `/api/v2/project/all/completedInAll/?${params.toString()}`;
 
-    if (options.to) {
-      params.set("to", options.to.replace("T", " ").replace(".000+0000", ""));
-    }
-
-    return this.client.requestJson<TickTickTask[]>({
-      path: `/api/v2/project/all/closed?${params.toString()}`,
-    });
+    return this.client.requestJson<TickTickTask[]>({ path });
   }
 
-  async *iterateCompleted(status: TickTickCompletedTaskOptions["status"] = "Completed"): AsyncGenerator<TickTickTask[]> {
+  listProjectClosed(projectId: string, options: TickTickClosedTaskOptions = {}): Promise<TickTickTask[]> {
+    const params = this.#buildClosedTaskParams(options);
+    const path = options.status
+      ? `/api/v2/project/${projectId}/closed?${params.toString()}`
+      : `/api/v2/project/${projectId}/completed/?${params.toString()}`;
+
+    return this.client.requestJson<TickTickTask[]>({ path });
+  }
+
+  listCompleted(options: TickTickCompletedTaskOptions = {}): Promise<TickTickTask[]> {
+    return this.listClosed({ ...options, status: "Completed" });
+  }
+
+  listAbandoned(options: TickTickCompletedTaskOptions = {}): Promise<TickTickTask[]> {
+    return this.listClosed({ ...options, status: "Abandoned" });
+  }
+
+  async *iterateClosed(status: TickTickCompletedTaskOptions["status"] = "Completed"): AsyncGenerator<TickTickTask[]> {
     let to: string | undefined;
 
     for (;;) {
-      const page = await this.listCompleted({ status, to });
+      const page = await this.listClosed({ status, to });
       if (page.length === 0) {
         return;
       }
@@ -100,6 +112,32 @@ export class TickTickTasksApi {
         return;
       }
     }
+  }
+
+  async *iterateCompleted(status: TickTickCompletedTaskOptions["status"] = "Completed"): AsyncGenerator<TickTickTask[]> {
+    yield* this.iterateClosed(status);
+  }
+
+  #buildClosedTaskParams(options: TickTickClosedTaskOptions): URLSearchParams {
+    const params = new URLSearchParams({
+      from: options.from ? this.#formatClosedTaskTime(options.from) : "",
+    });
+
+    if (options.to) {
+      params.set("to", this.#formatClosedTaskTime(options.to));
+    }
+    if (options.limit !== undefined) {
+      params.set("limit", String(options.limit));
+    }
+    if (options.status) {
+      params.set("status", options.status);
+    }
+
+    return params;
+  }
+
+  #formatClosedTaskTime(value: string): string {
+    return value.replace("T", " ").replace(".000+0000", "");
   }
 
   listTrash(limit = 50, taskType = 1): Promise<TickTickTrashResponse> {

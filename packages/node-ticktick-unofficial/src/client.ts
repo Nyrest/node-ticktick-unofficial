@@ -3,6 +3,7 @@ import { getCookieValue, getSetCookieHeaders, mergeCookies, parseSetCookieHeader
 import { createDeviceId, createTraceId } from "./internal/ids.js";
 import { TickTickFocusApi } from "./modules/focus.js";
 import { TickTickHabitsApi } from "./modules/habits.js";
+import { TickTickCalendarApi } from "./modules/calendar.js";
 import { TickTickCountdownsApi } from "./modules/countdowns.js";
 import { TickTickProjectsApi } from "./modules/projects.js";
 import { TickTickStatisticsApi } from "./modules/statistics.js";
@@ -52,6 +53,7 @@ export class TickTickClient {
   readonly tags: TickTickTagsApi;
   readonly projects: TickTickProjectsApi;
   readonly countdowns: TickTickCountdownsApi;
+  readonly calendar: TickTickCalendarApi;
   readonly habits: TickTickHabitsApi;
   readonly focus: TickTickFocusApi;
   readonly pomodoros: TickTickFocusApi;
@@ -99,6 +101,7 @@ export class TickTickClient {
     this.tags = new TickTickTagsApi(this);
     this.projects = new TickTickProjectsApi(this);
     this.countdowns = new TickTickCountdownsApi(this);
+    this.calendar = new TickTickCalendarApi(this);
     this.habits = new TickTickHabitsApi(this);
     this.focus = new TickTickFocusApi(this);
     this.pomodoros = this.focus;

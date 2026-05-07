@@ -11,7 +11,7 @@ export class TickTickTagsApi {
   constructor(private readonly client: TickTickClient) {}
 
   async list(): Promise<TickTickTag[]> {
-    const response = await this.client.tasks.getAll();
+    const response = await this.client.tasks.sync();
     const rawTags = response.tags ?? [];
     return rawTags.map((tag) => {
       if (typeof tag === "string") {

@@ -81,7 +81,7 @@ export class TickTickService {
   }
 
   async listTasks() {
-    return (await this.getClient()).tasks.list();
+    return (await this.getClient()).tasks.listActive();
   }
 
   async #createClient(): Promise<TickTickClient> {

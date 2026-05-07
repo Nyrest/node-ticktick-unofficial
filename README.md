@@ -122,7 +122,7 @@ const client = await TickTickClient.create({
   sessionStore: createFileSessionStore(".ticktick/session.json"),
 });
 
-const tasks = await client.tasks.list();
+const tasks = await client.tasks.listActive();
 const task = await client.tasks.create({ title: "Write release notes" });
 const sameTask = await client.tasks.get(task.id);
 

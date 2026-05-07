@@ -344,6 +344,88 @@ export interface TickTickTagBatchResponse {
 
 export type TickTickTagUpdate = Partial<TickTickTag> & Pick<TickTickTag, "name">;
 
+export type TickTickCalendarSite = "google" | "outlook" | "notion" | string;
+export type TickTickCalendarShowState = "show" | "hidden" | string;
+
+export interface TickTickThirdCalendar {
+  id: string;
+  name: string;
+  show?: TickTickCalendarShowState;
+  mobileShow?: TickTickCalendarShowState;
+  color?: string;
+  outId?: string;
+  timeZone?: string;
+  visible?: boolean;
+  accessRole?: string;
+  etag?: string;
+  hidden?: boolean;
+  modifiedTime?: number | string;
+  [key: string]: unknown;
+}
+
+export interface TickTickCalendarAccount {
+  id: string;
+  account: string;
+  site: TickTickCalendarSite;
+  calendars: TickTickThirdCalendar[];
+  createdTime?: string;
+  modifiedTime?: string;
+  kind?: string;
+  status?: number;
+  [key: string]: unknown;
+}
+
+export interface TickTickCalendarConnect extends TickTickCalendarAccount {
+  userId?: number;
+  relProjects?: Array<Record<string, unknown>>;
+  workspaceId?: string;
+  workspaceName?: string;
+  workspaceIcon?: string;
+  botId?: string;
+  ownerName?: string;
+  ownerId?: string;
+  duplicatedTemplateId?: string;
+}
+
+export interface TickTickCalendarAccountsResponse {
+  accounts: TickTickCalendarAccount[];
+  connects: TickTickCalendarConnect[];
+  [key: string]: unknown;
+}
+
+export interface TickTickCalendarEvent {
+  id: string;
+  uid?: string;
+  title: string;
+  content?: string;
+  dueStart?: string;
+  dueEnd?: string;
+  repeatFlag?: string;
+  isAllDay?: boolean;
+  reminders?: number[];
+  etag?: string;
+  [key: string]: unknown;
+}
+
+export interface TickTickCalendarEventGroup {
+  id: string;
+  name: string;
+  color?: string;
+  events: TickTickCalendarEvent[];
+  [key: string]: unknown;
+}
+
+export interface TickTickCalendarEventsResponse {
+  events: TickTickCalendarEventGroup[];
+  errorIds?: string[];
+  begin?: string;
+  end?: string;
+  reTime?: string | null;
+  accountId?: string | null;
+  userId?: number | string | null;
+  [key: string]: unknown;
+}
+
 export interface TickTickProjectProfile {
   id: string;
   name: string;
@@ -397,10 +479,16 @@ export interface TickTickTaskSyncResponse {
   [key: string]: unknown;
 }
 
-export interface TickTickCompletedTaskOptions {
+export type TickTickClosedTaskStatus = "Completed" | "Abandoned";
+
+export interface TickTickClosedTaskOptions {
+  from?: string;
   to?: string;
-  status?: "Completed" | "Abandoned";
+  status?: TickTickClosedTaskStatus;
+  limit?: number;
 }
+
+export type TickTickCompletedTaskOptions = TickTickClosedTaskOptions;
 
 export interface TickTickTaskGetOptions {
   projectId?: string;

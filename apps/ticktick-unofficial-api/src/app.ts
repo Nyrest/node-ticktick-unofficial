@@ -517,7 +517,7 @@ export function createApp(
     .get(
       "/tasks/sync",
       async function syncTasks() {
-        return (await ticktick.getClient()).tasks.getAll();
+        return (await ticktick.getClient()).tasks.sync();
       },
       {
         detail: protectedDetail(
@@ -535,7 +535,7 @@ export function createApp(
     .get(
       "/tasks",
       async function listTasks() {
-        return (await ticktick.getClient()).tasks.list();
+        return (await ticktick.getClient()).tasks.listActive();
       },
       {
         detail: protectedDetail(config, "Tasks", "List active tasks", "Returns the active task list from the sync endpoint."),
@@ -564,15 +564,15 @@ export function createApp(
     .get(
       "/tasks/completed",
       async function listCompletedTasks({ query }) {
-        return (await ticktick.getClient()).tasks.listCompleted(query);
+        return (await ticktick.getClient()).tasks.listClosed(query);
       },
       {
         query: CompletedTasksQuerySchema,
         detail: protectedDetail(
           config,
           "Tasks",
-          "List completed tasks",
-          "Returns completed or abandoned tasks, optionally paging from a completion timestamp.",
+          "List closed tasks",
+          "Returns completed and abandoned tasks, optionally filtered by closed status and paged by completion timestamp.",
         ),
         response: {
           200: t.Array(TaskSchema),

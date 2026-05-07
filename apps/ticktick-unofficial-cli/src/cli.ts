@@ -250,7 +250,7 @@ function withRuntime<T extends { flags: Record<string, unknown> }>(
 }
 
 async function resolveOpenTaskByReference(client: TickTickClient, reference: string): Promise<TickTickTask> {
-  const tasks = await client.tasks.list();
+  const tasks = await client.tasks.listActive();
 
   try {
     return resolveTask(tasks, reference);
@@ -1127,7 +1127,7 @@ function createTaskCommand() {
           const client = await requireClient(runtime);
           const [projects, openTasks, completedTasks, abandonedTasks] = await Promise.all([
             client.projects.list(),
-            client.tasks.list(),
+            client.tasks.listActive(),
             flags.all || flags.completed || requestedStatus === TickTickTaskStatuses.completed
               ? client.tasks.listCompleted({ status: "Completed" })
               : Promise.resolve([]),

@@ -487,7 +487,7 @@ export async function resolveTaskByReference(
 
   // Fallback to name resolution
   const [openTasks, completedTasks, abandonedTasks] = await Promise.all([
-    client.tasks.list(),
+    client.tasks.listActive(),
     options.includeCompleted
       ? client.tasks.listCompleted({ status: "Completed" })
       : Promise.resolve([]),
@@ -517,7 +517,7 @@ export async function resolveTasksByReferences(
 
   // Fallback: fetch all and resolve
   const [openTasks, completedTasks, abandonedTasks] = await Promise.all([
-    client.tasks.list(),
+    client.tasks.listActive(),
     options.includeCompleted
       ? client.tasks.listCompleted({ status: "Completed" })
       : Promise.resolve([]),
