@@ -5,6 +5,9 @@ import { Elysia, t } from "elysia";
 
 import type { AppConfig } from "./lib/config";
 import {
+  ArchivedCalendarEventSchema,
+  CalendarAccountsResponseSchema,
+  CalendarEventsResponseSchema,
   ColumnSchema,
   CompletedTasksQuerySchema,
   CountdownBatchRequestSchema,
@@ -103,6 +106,7 @@ export function createApp(
             { name: "Projects", description: "Project and column management." },
             { name: "Tags", description: "Tag management." },
             { name: "Tasks", description: "Task sync, CRUD, pinning, status changes, and trash access." },
+            { name: "Calendar", description: "Third-party calendar bindings and bound calendar events." },
             { name: "Countdowns", description: "Countdown, anniversary, birthday, and holiday management." },
             { name: "Habits", description: "Habit CRUD, exports, and check-in workflows." },
             { name: "Focus", description: "Pomodoro, focus timeline, and focus operations." },
@@ -717,6 +721,60 @@ export function createApp(
         detail: protectedDetail(config, "Tasks", "Soft-delete multiple tasks", "Marks multiple tasks as deleted."),
         response: {
           200: t.Array(DeleteResultSchema),
+          401: ErrorSchema,
+        },
+      },
+    )
+    .get(
+      "/calendar/accounts",
+      async function listCalendarAccounts() {
+        return (await ticktick.getClient()).calendar.listAccounts();
+      },
+      {
+        detail: protectedDetail(
+          config,
+          "Calendar",
+          "List third-party calendar accounts",
+          "Returns bound third-party calendar accounts and integrations such as Google, Outlook, and Notion.",
+        ),
+        response: {
+          200: CalendarAccountsResponseSchema,
+          401: ErrorSchema,
+        },
+      },
+    )
+    .get(
+      "/calendar/events",
+      async function listCalendarEvents() {
+        return (await ticktick.getClient()).calendar.listEvents();
+      },
+      {
+        detail: protectedDetail(
+          config,
+          "Calendar",
+          "List bound calendar events",
+          "Returns events grouped by bound third-party calendar.",
+        ),
+        response: {
+          200: CalendarEventsResponseSchema,
+          401: ErrorSchema,
+        },
+      },
+    )
+    .get(
+      "/calendar/archived-events",
+      async function listArchivedCalendarEvents() {
+        return (await ticktick.getClient()).calendar.listArchivedEvents();
+      },
+      {
+        detail: protectedDetail(
+          config,
+          "Calendar",
+          "List archived calendar events",
+          "Returns archived or hidden bound calendar events tracked by TickTick.",
+        ),
+        response: {
+          200: t.Array(ArchivedCalendarEventSchema),
           401: ErrorSchema,
         },
       },

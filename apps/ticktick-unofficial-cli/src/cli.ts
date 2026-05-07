@@ -71,6 +71,9 @@ import {
   formatDate,
   formatFocusStatus,
   printOutput,
+  renderArchivedCalendarEvents,
+  renderCalendarAccounts,
+  renderCalendarEvents,
   renderHabitTable,
   renderCountdownDetails,
   renderCountdownTable,
@@ -1988,6 +1991,80 @@ function createStatisticsCommand() {
     );
 }
 
+function createCalendarCommand() {
+  return new Crust("calendar")
+    .flags(rootFlags)
+    .meta({
+      description: "Inspect third-party calendar bindings and events",
+    })
+    .command(
+      "accounts",
+      (command) =>
+        command
+          .meta({
+            description: "List bound third-party calendar accounts",
+          })
+          .run(
+            withRuntime(async (_, runtime) => {
+              const client = await requireClient(runtime);
+              const accounts = await client.calendar.listAccounts();
+              printOutput(
+                runtime,
+                {
+                  accounts,
+                  ok: true,
+                },
+                () => renderCalendarAccounts(accounts),
+              );
+            }),
+          ),
+    )
+    .command(
+      "events",
+      (command) =>
+        command
+          .meta({
+            description: "List bound third-party calendar events",
+          })
+          .run(
+            withRuntime(async (_, runtime) => {
+              const client = await requireClient(runtime);
+              const events = await client.calendar.listEvents();
+              printOutput(
+                runtime,
+                {
+                  events,
+                  ok: true,
+                },
+                () => renderCalendarEvents(events),
+              );
+            }),
+          ),
+    )
+    .command(
+      "archived-events",
+      (command) =>
+        command
+          .meta({
+            description: "List archived bound calendar event markers",
+          })
+          .run(
+            withRuntime(async (_, runtime) => {
+              const client = await requireClient(runtime);
+              const archivedEvents = await client.calendar.listArchivedEvents();
+              printOutput(
+                runtime,
+                {
+                  archivedEvents,
+                  ok: true,
+                },
+                () => renderArchivedCalendarEvents(archivedEvents),
+              );
+            }),
+          ),
+    );
+}
+
 function createHabitCommand() {
   return new Crust("habit")
     .flags(rootFlags)
@@ -2672,6 +2749,7 @@ description: "Human-friendly and automation-friendly CLI for TickTick using node
   .command(createTaskCommand())
   .command(createFocusCommand())
   .command(createStatisticsCommand())
+  .command(createCalendarCommand())
   .command(createCountdownCommand())
   .command(createHabitCommand());
 

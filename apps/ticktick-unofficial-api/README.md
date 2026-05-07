@@ -22,6 +22,7 @@ The API can expose:
 - projects and columns
 - tags
 - tasks and task sync data
+- third-party calendar bindings and bound calendar events
 - countdowns
 - habits and habit exports
 - focus state and focus history
@@ -97,6 +98,9 @@ Common data:
 - `GET /api/projects`
 - `GET /api/tags`
 - `GET /api/tasks`
+- `GET /api/calendar/accounts`
+- `GET /api/calendar/events`
+- `GET /api/calendar/archived-events`
 - `GET /api/countdowns`
 - `GET /api/habits`
 - `GET /api/focus/state`

@@ -40,6 +40,7 @@ The shared `node-ticktick-unofficial` library currently exposes these supported 
 | `client.user` | Account profile data | Identify the current account and inspect profile details |
 | `client.projects` | Projects and columns | List projects, inspect structure, and work with project metadata |
 | `client.tasks` | Tasks and task sync data | Read, create, update, move, complete, reopen, and delete tasks |
+| `client.calendar` | Third-party calendar bindings | List connected Google, Outlook and other bound calendars and events |
 | `client.countdowns` | Countdowns and anniversaries | List, create, update, and remove countdown-style items |
 | `client.habits` | Habits, check-ins, and exports | Read habit data, record check-ins, and export habit information |
 | `client.focus` | Focus session state and history | Start, pause, resume, finish, stop, and inspect focus sessions |

@@ -44,8 +44,9 @@ const client = await TickTickClient.create({
 
 const profile = await client.user.getProfile();
 const tasks = await client.tasks.listActive();
+const calendarAccounts = await client.calendar.listAccounts();
 
-console.log(profile.username, tasks.length);
+console.log(profile.username, tasks.length, calendarAccounts.accounts.length);
 ```
 
 ## API Design
@@ -86,6 +87,12 @@ Resource modules follow the same shape where the upstream API allows it:
 Direct `get(id)` is only used when TickTick exposes a real single-item endpoint. List-based lookup is named `findById(id)` so callers can see the cost and freshness tradeoff in the method name.
 
 Task listing is intentionally explicit: use `tasks.sync()` for the raw sync payload, `tasks.listActive()` for active tasks, `tasks.listClosed()` for completed and abandoned tasks, and `tasks.listCompleted()` / `tasks.listAbandoned()` for one closed status.
+
+Calendar integrations are read-only:
+
+- `calendar.listAccounts()` returns bound third-party accounts and calendars from `GET /api/v2/calendar/third/accounts`.
+- `calendar.listEvents()` returns bound calendar events from `GET /api/v2/calendar/bind/events/all`. TickTick may reject this endpoint with `need_pro` when the account does not have the required calendar capability.
+- `calendar.listArchivedEvents()` returns archived bound calendar event markers from `GET /api/v2/calendar/archivedEvent`.
 
 ## Session Handling
 
@@ -131,6 +138,7 @@ const client = await TickTickClient.create({
 | `client.projects` | Projects and columns | List projects, inspect columns, and work with project structure |
 | `client.tags` | Tags management | List, create, update, rename, merge, and delete tags |
 | `client.tasks` | Tasks and task sync data | Read, create, update, move, complete, reopen, pin, and delete tasks |
+| `client.calendar` | Third-party calendar bindings | List connected Google, Outlook, Notion, and other bound calendars and events |
 | `client.countdowns` | Countdowns and anniversaries | Manage countdown-style items and anniversary reminders |
 | `client.habits` | Habits, check-ins, and exports | Read habits, query check-ins, update check-ins, and export data |
 | `client.focus` | Focus session state and history | Control a running focus session and inspect related history |

@@ -93,6 +93,14 @@ ticktick-unofficial-cli countdown list
 ticktick-unofficial-cli countdown add "Exam" --date 2026-03-30 --type countdown
 ```
 
+Calendars:
+
+```bash
+ticktick-unofficial-cli calendar accounts
+ticktick-unofficial-cli calendar events --json
+ticktick-unofficial-cli calendar archived-events
+```
+
 Focus:
 
 ```bash

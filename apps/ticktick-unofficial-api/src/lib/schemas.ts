@@ -73,6 +73,93 @@ export const UserProfileSchema = t.Object(
   { additionalProperties: true },
 );
 
+export const CalendarItemSchema = t.Object(
+  {
+    id: t.String(),
+    name: t.String(),
+    show: t.Optional(t.String()),
+    mobileShow: t.Optional(t.String()),
+    color: t.Optional(t.String()),
+    outId: t.Optional(t.String()),
+    timeZone: t.Optional(t.String()),
+    visible: t.Optional(t.Boolean()),
+    accessRole: t.Optional(t.String()),
+    etag: t.Optional(t.String()),
+    hidden: t.Optional(t.Boolean()),
+  },
+  { additionalProperties: true },
+);
+
+export const CalendarAccountSchema = t.Object(
+  {
+    id: t.String(),
+    account: t.String(),
+    site: t.String(),
+    calendars: t.Array(CalendarItemSchema),
+    createdTime: t.Optional(t.String()),
+    modifiedTime: t.Optional(t.String()),
+    kind: t.Optional(t.String()),
+    status: t.Optional(t.Number()),
+  },
+  { additionalProperties: true },
+);
+
+export const CalendarAccountsResponseSchema = t.Object(
+  {
+    accounts: t.Array(CalendarAccountSchema),
+    connects: t.Array(CalendarAccountSchema),
+  },
+  { additionalProperties: true },
+);
+
+export const CalendarEventSchema = t.Object(
+  {
+    id: t.String(),
+    uid: t.Optional(t.String()),
+    title: t.String(),
+    content: t.Optional(t.String()),
+    dueStart: t.Optional(t.String()),
+    dueEnd: t.Optional(t.String()),
+    repeatFlag: t.Optional(t.String()),
+    isAllDay: t.Optional(t.Boolean()),
+    reminders: t.Optional(t.Array(t.Number())),
+    etag: t.Optional(t.String()),
+  },
+  { additionalProperties: true },
+);
+
+export const CalendarEventGroupSchema = t.Object(
+  {
+    id: t.String(),
+    name: t.String(),
+    color: t.Optional(t.String()),
+    events: t.Array(CalendarEventSchema),
+  },
+  { additionalProperties: true },
+);
+
+export const CalendarEventsResponseSchema = t.Object(
+  {
+    events: t.Array(CalendarEventGroupSchema),
+    errorIds: t.Optional(t.Array(t.String())),
+    begin: t.Optional(t.String()),
+    end: t.Optional(t.String()),
+    reTime: t.Optional(NullableString),
+    accountId: t.Optional(NullableString),
+    userId: t.Optional(t.Union([t.Number(), t.String(), t.Null()])),
+  },
+  { additionalProperties: true },
+);
+
+export const ArchivedCalendarEventSchema = t.Object(
+  {
+    eventId: t.Union([t.Number(), t.String()]),
+    dueStart: t.String(),
+    title: t.String(),
+  },
+  { additionalProperties: true },
+);
+
 export const ColumnSchema = t.Object(
   {
     id: t.String(),

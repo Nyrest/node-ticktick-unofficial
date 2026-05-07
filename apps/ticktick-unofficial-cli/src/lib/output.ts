@@ -1,5 +1,8 @@
 import { table } from "@crustjs/style";
 import type {
+  TickTickArchivedCalendarEvent,
+  TickTickCalendarAccountsResponse,
+  TickTickCalendarEventsResponse,
   TickTickCountdown,
   TickTickGeneralStatistics,
   TickTickHabit,
@@ -181,6 +184,53 @@ export function renderCountdownDetails(countdown: TickTickCountdown): string {
     `Color: ${countdown.color ?? "-"}`,
     `Remark: ${countdown.remark || "-"}`,
   ].join("\n");
+}
+
+export function renderCalendarAccounts(response: TickTickCalendarAccountsResponse): string {
+  const rows = response.accounts.map((account) => [
+    shortId(account.id),
+    account.site,
+    account.account,
+    String(account.calendars.length),
+    account.kind ?? "-",
+    account.status == null ? "-" : String(account.status),
+  ]);
+
+  const connectRows = response.connects.map((connect) => [
+    shortId(connect.id),
+    connect.site,
+    connect.account,
+    String(connect.calendars.length),
+    connect.kind ?? "-",
+    connect.status == null ? "-" : String(connect.status),
+  ]);
+
+  const sections = [`Accounts\n${table(["ID", "Site", "Account", "Calendars", "Kind", "Status"], rows)}`];
+  if (connectRows.length > 0) {
+    sections.push(`Connects\n${table(["ID", "Site", "Account", "Calendars", "Kind", "Status"], connectRows)}`);
+  }
+
+  return sections.join("\n\n");
+}
+
+export function renderCalendarEvents(response: TickTickCalendarEventsResponse): string {
+  const rows = response.events.map((group) => [
+    shortId(group.id),
+    group.name,
+    group.color ?? "-",
+    String(group.events.length),
+    group.events[0]?.title ?? "-",
+  ]);
+
+  return [
+    `Range: ${formatDate(response.begin)} - ${formatDate(response.end)}`,
+    table(["ID", "Calendar", "Color", "Events", "First event"], rows),
+  ].join("\n");
+}
+
+export function renderArchivedCalendarEvents(events: TickTickArchivedCalendarEvent[]): string {
+  const rows = events.map((event) => [String(event.eventId), formatDate(event.dueStart), event.title]);
+  return table(["Event ID", "Due start", "Title"], rows);
 }
 
 export function renderStatistics(

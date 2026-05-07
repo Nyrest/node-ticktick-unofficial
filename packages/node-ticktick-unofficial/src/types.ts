@@ -426,6 +426,13 @@ export interface TickTickCalendarEventsResponse {
   [key: string]: unknown;
 }
 
+export interface TickTickArchivedCalendarEvent {
+  eventId: number | string;
+  dueStart: string;
+  title: string;
+  [key: string]: unknown;
+}
+
 export interface TickTickProjectProfile {
   id: string;
   name: string;
