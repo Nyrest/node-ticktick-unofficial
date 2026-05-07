@@ -599,16 +599,32 @@ function createTagCommand() {
             withRuntime(async ({ args, flags }, runtime) => {
               const client = await requireClient(runtime);
               const tags = await client.tags.list();
-              const current = resolveTag(tags, args.tag);
+              let current = resolveTag(tags, args.tag);
 
+              if (flags.label && flags.label !== (current.label || current.name)) {
+                await client.tags.rename(current.name, flags.label);
+                for (let attempt = 0; attempt < 3; attempt += 1) {
+                  try {
+                    current = resolveTag(await client.tags.list(), flags.label);
+                    break;
+                  } catch (error) {
+                    if (attempt === 2) {
+                      throw error;
+                    }
+
+                    await Bun.sleep(500 * (attempt + 1));
+                  }
+                }
+              }
+
+              const needsTagUpdate = flags.color !== undefined || flags.parent !== undefined;
               const updated: TickTickTag = {
                 ...current,
-                ...(flags.label ? { label: flags.label } : null),
                 ...(flags.color !== undefined ? { color: flags.color } : null),
                 ...(flags.parent !== undefined ? { parent: flags.parent || null } : null),
               };
 
-              const result = await client.tags.update(updated);
+              const result = needsTagUpdate ? await client.tags.update(updated) : current;
 
               printOutput(
                 runtime,
@@ -797,7 +813,7 @@ function createProjectCommand() {
               const projects = await client.projects.list();
               const search = flags.search?.toLowerCase();
               const filtered = search
-                ? projects.filter((project) => project.name.toLowerCase().includes(search))
+                ? projects.filter((project) => (project.name ?? "").toLowerCase().includes(search))
                 : projects;
 
               printOutput(
@@ -1147,10 +1163,10 @@ function createTaskCommand() {
             client.projects.list(),
             client.tasks.listActive(),
             flags.all || flags.completed || requestedStatus === TickTickTaskStatuses.completed
-              ? client.tasks.listCompleted({ status: "Completed" })
+              ? client.tasks.listCompleted()
               : Promise.resolve([]),
             flags.all || flags.completed || requestedStatus === TickTickTaskStatuses.wontDo
-              ? client.tasks.listCompleted({ status: "Abandoned" })
+              ? client.tasks.listAbandoned()
               : Promise.resolve([]),
           ]);
 

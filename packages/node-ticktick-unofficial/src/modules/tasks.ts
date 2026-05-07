@@ -121,11 +121,9 @@ export class TickTickTasksApi {
   #buildClosedTaskParams(options: TickTickClosedTaskOptions): URLSearchParams {
     const params = new URLSearchParams({
       from: options.from ? this.#formatClosedTaskTime(options.from) : "",
+      to: this.#formatClosedTaskTime(options.to ?? new Date().toISOString()),
     });
 
-    if (options.to) {
-      params.set("to", this.#formatClosedTaskTime(options.to));
-    }
     if (options.limit !== undefined) {
       params.set("limit", String(options.limit));
     }
@@ -137,7 +135,18 @@ export class TickTickTasksApi {
   }
 
   #formatClosedTaskTime(value: string): string {
-    return value.replace("T", " ").replace(".000+0000", "");
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return value.replace("T", " ").replace(".000+0000", "");
+    }
+
+    const year = date.getUTCFullYear();
+    const month = `${date.getUTCMonth() + 1}`.padStart(2, "0");
+    const day = `${date.getUTCDate()}`.padStart(2, "0");
+    const hours = `${date.getUTCHours()}`.padStart(2, "0");
+    const minutes = `${date.getUTCMinutes()}`.padStart(2, "0");
+    const seconds = `${date.getUTCSeconds()}`.padStart(2, "0");
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
   }
 
   listTrash(limit = 50, taskType = 1): Promise<TickTickTrashResponse> {
