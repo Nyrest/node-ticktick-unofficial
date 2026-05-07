@@ -27,4 +27,17 @@ export class TickTickApiError extends TickTickError {
   }
 }
 
+export class TickTickNotFoundError extends TickTickError {
+  readonly resource: string;
+  readonly id: string;
+
+  constructor(resource: string, id: string, options?: ErrorOptions) {
+    super(`${resource} ${id} was not found.`, options);
+    this.resource = resource;
+    this.id = id;
+  }
+}
+
+export class TickTickRateLimitError extends TickTickApiError {}
+
 export class TickTickAuthError extends TickTickError {}

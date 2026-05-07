@@ -1,5 +1,5 @@
 import type { TickTickClient } from "../client.js";
-import type { TickTickTag, TickTickTagBatchRequest, TickTickTagBatchResponse } from "../types.js";
+import type { TickTickDeleteResult, TickTickTag, TickTickTagBatchRequest, TickTickTagBatchResponse } from "../types.js";
 
 export class TickTickTagsApi {
   constructor(private readonly client: TickTickClient) {}
@@ -27,20 +27,28 @@ export class TickTickTagsApi {
     });
   }
 
-  async create(tag: TickTickTag | TickTickTag[]): Promise<TickTickTagBatchResponse> {
+  async create(tag: TickTickTag): Promise<TickTickTag>;
+  async create(tags: TickTickTag[]): Promise<TickTickTag[]>;
+  async create(tag: TickTickTag | TickTickTag[]): Promise<TickTickTag | TickTickTag[]> {
     const tags = Array.isArray(tag) ? tag : [tag];
-    return this.batch({ add: tags });
+    await this.batch({ add: tags });
+    return tag;
   }
 
-  async update(tag: TickTickTag | TickTickTag[]): Promise<TickTickTagBatchResponse> {
+  async update(tag: TickTickTag): Promise<TickTickTag>;
+  async update(tags: TickTickTag[]): Promise<TickTickTag[]>;
+  async update(tag: TickTickTag | TickTickTag[]): Promise<TickTickTag | TickTickTag[]> {
     const tags = Array.isArray(tag) ? tag : [tag];
-    return this.batch({ update: tags });
+    await this.batch({ update: tags });
+    return tag;
   }
 
-  async delete(name: string | string[]): Promise<TickTickTagBatchResponse> {
+  async delete(name: string): Promise<TickTickDeleteResult>;
+  async delete(names: string[]): Promise<TickTickDeleteResult[]>;
+  async delete(name: string | string[]): Promise<TickTickDeleteResult | TickTickDeleteResult[]> {
     const names = Array.isArray(name) ? name : [name];
     if (names.length === 0) {
-      return {};
+      return [];
     }
 
     if (names.length === 1) {
@@ -49,16 +57,17 @@ export class TickTickTagsApi {
         method: "DELETE",
         json: { name: names[0]! },
       });
-      return { id2etag: { [names[0]!]: "" } };
+      return { id: names[0]!, deleted: true };
     }
 
-    return this.client.requestJson<TickTickTagBatchResponse>({
+    await this.client.requestJson<TickTickTagBatchResponse>({
       path: "/api/v2/batch/tag",
       method: "POST",
       json: {
         delete: names,
       },
     });
+    return names.map((id) => ({ id, deleted: true }));
   }
 
   async setPinned(name: string, pinned: boolean): Promise<void> {

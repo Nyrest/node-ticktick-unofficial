@@ -54,7 +54,7 @@ export class TickTickService {
 
   async getSessionStatus(): Promise<SessionStatus> {
     const client = await this.getClient();
-    const session = await client.restoreSession();
+    const session = await client.session.restore();
 
     return {
       hasSession: Boolean(session),
@@ -101,20 +101,20 @@ export class TickTickService {
 
   async #runRefreshSession(source: string): Promise<SessionMaintenanceResult> {
     const client = await this.getClient();
-    const existingSession = await client.restoreSession();
+    const existingSession = await client.session.restore();
     const hadSession = Boolean(existingSession);
-    const isValid = hadSession ? await client.validateSession() : false;
+    const isValid = hadSession ? await client.session.validate() : false;
 
     let action: SessionMaintenanceResult["action"];
     if (isValid) {
-      await client.keepAlive();
+      await client.session.keepAlive();
       action = "keepalive";
     } else {
-      await client.login();
+      await client.session.login();
       action = hadSession ? "relogin" : "login";
     }
 
-    const session = client.getSession();
+    const session = client.session.get();
     return this.#toMaintenanceResult(session, action, source);
   }
 

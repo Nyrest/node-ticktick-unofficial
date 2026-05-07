@@ -12,6 +12,7 @@ import {
   parseTickTickCountdownTimerMode,
   parseTickTickCountdownType,
   TickTickClient,
+  TickTickNotFoundError,
   type TickTickCountdown,
   type TickTickCountdownDayCalculationMode,
   type TickTickCountdownDaysOption,
@@ -167,7 +168,7 @@ export async function loginWithCredentials(
     timezone: runtime.flags.timezone,
   });
 
-  await client.login(credentials);
+  await client.session.login(credentials);
   await runtime.authStore.write({
     service,
     username: credentials.username,
@@ -187,7 +188,7 @@ export async function requireClient(
     timezone: runtime.flags.timezone,
   });
 
-  if (await client.validateSession()) {
+  if (await client.session.validate()) {
     return client;
   }
 
@@ -197,7 +198,7 @@ export async function requireClient(
     );
   }
 
-  await client.login(credentials);
+  await client.session.login(credentials);
   await runtime.authStore.write({
     service: runtime.service,
     username: credentials.username,
@@ -212,7 +213,7 @@ export async function logout(runtime: RuntimeContext): Promise<void> {
     timezone: runtime.flags.timezone,
   });
 
-  await client.clearSession();
+  await client.session.clear();
   await runtime.authStore.write({
     service: runtime.service,
     username: undefined,
@@ -475,9 +476,12 @@ export async function resolveTaskByReference(
   options: { includeCompleted?: boolean } = {},
 ): Promise<TickTickTask> {
   if (looksLikeTaskId(reference)) {
-    const task = await client.tasks.getById(reference, options);
-    if (task) {
-      return task;
+    try {
+      return await client.tasks.get(reference, options);
+    } catch (error) {
+      if (!(error instanceof TickTickNotFoundError)) {
+        throw error;
+      }
     }
   }
 
@@ -502,11 +506,12 @@ export async function resolveTasksByReferences(
 ): Promise<TickTickTask[]> {
   // Try fast path: all are IDs
   if (references.every(looksLikeTaskId)) {
-    const tasks = await Promise.all(
-      references.map((id) => client.tasks.getById(id, options)),
-    );
-    if (tasks.every((t) => t !== null)) {
-      return tasks as TickTickTask[];
+    try {
+      return await Promise.all(references.map((id) => client.tasks.get(id, options)));
+    } catch (error) {
+      if (!(error instanceof TickTickNotFoundError)) {
+        throw error;
+      }
     }
   }
 

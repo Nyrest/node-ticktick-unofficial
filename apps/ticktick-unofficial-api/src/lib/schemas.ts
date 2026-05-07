@@ -9,6 +9,11 @@ export const ErrorSchema = t.Object({
   details: t.Optional(t.Any()),
 });
 
+export const DeleteResultSchema = t.Object({
+  id: t.String(),
+  deleted: t.Literal(true),
+});
+
 export const RootInfoSchema = t.Object({
   name: t.String(),
   version: t.String(),

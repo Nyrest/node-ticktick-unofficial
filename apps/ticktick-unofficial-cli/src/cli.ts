@@ -15,6 +15,7 @@ import {
   TickTickTaskPriorityInputHelp,
   TickTickTaskStatuses,
   TickTickTaskStatusInputHelp,
+  TickTickNotFoundError,
 } from "node-ticktick-unofficial";
 import type { TickTickClient, TickTickCountdown, TickTickHabit, TickTickTag, TickTickTask } from "node-ticktick-unofficial";
 
@@ -259,9 +260,12 @@ async function resolveOpenTaskByReference(client: TickTickClient, reference: str
     }
 
     for (let attempt = 0; attempt < 3; attempt += 1) {
-      const task = await client.tasks.getById(reference);
-      if (task) {
-        return task;
+      try {
+        return await client.tasks.get(reference);
+      } catch (getError) {
+        if (!(getError instanceof TickTickNotFoundError)) {
+          throw getError;
+        }
       }
 
       await Bun.sleep(500 * (attempt + 1));
@@ -919,11 +923,11 @@ function createProjectCommand() {
               const projects = await client.projects.list();
               const project = resolveProject(projects, args.project);
               const name = ensureValue(joinWords(args.name), "New project name");
+              const updated = { ...project, name };
               await client.projects.update({
                 id: project.id,
                 name,
               });
-              const updated = (await client.projects.getById(project.id)) ?? { ...project, name };
 
               printOutput(
                 runtime,
@@ -964,7 +968,7 @@ function createProjectCommand() {
               else throw new CliError(`Unsupported project field "${args.field}".`);
 
               await client.projects.update(update as { id: string });
-              const updated = (await client.projects.getById(project.id)) ?? { ...project, ...update };
+              const updated = { ...project, ...update };
 
               printOutput(
                 runtime,
@@ -1250,7 +1254,7 @@ function createTaskCommand() {
               const title = ensureValue(joinWords(args.title), "Task title");
               const projects = await client.projects.list();
               const projectId = flags.project ? resolveProject(projects, flags.project).id : undefined;
-              const result = await client.tasks.create({
+              const task = await client.tasks.create({
                 title,
                 content: flags.content ?? "",
                 desc: flags.desc ?? undefined,
@@ -1261,17 +1265,14 @@ function createTaskCommand() {
                 status: parseTaskStatus(flags.status ?? undefined),
                 tags: flags.tag ?? [],
               });
-              const taskId = Object.keys(result.id2etag ?? {})[0];
-              const task = taskId ? await client.tasks.getById(taskId) : null;
 
               printOutput(
                 runtime,
                 {
                   ok: true,
-                  result,
                   task,
                 },
-                () => (task ? `Created task ${task.title} (${task.id}).` : `Created task ${title}.`),
+                () => `Created task ${task.title} (${task.id}).`,
               );
             }),
           ),
@@ -2569,15 +2570,13 @@ function createCountdownCommand() {
                 ...(flags.color !== undefined ? { color: flags.color } : null),
               };
 
-              const result = await client.countdowns.update(updated);
-              const countdown = (await client.countdowns.getById(current.id)) ?? updated;
+              const countdown = await client.countdowns.update(updated);
 
               printOutput(
                 runtime,
                 {
                   countdown,
                   ok: true,
-                  result,
                 },
                 () => `Updated countdown ${countdown.name} (${countdown.id}).`,
               );

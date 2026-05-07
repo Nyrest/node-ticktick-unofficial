@@ -67,6 +67,32 @@ export interface TickTickSessionStore {
   clear(): Promise<void>;
 }
 
+export interface TickTickRequestOptions {
+  path: string;
+  method?: string;
+  headers?: HeadersInit;
+  json?: unknown;
+  auth?: "required" | "none";
+  base?: "api" | "ms" | "absolute";
+  retryAuth?: boolean;
+}
+
+export interface TickTickRawApi {
+  request(options: TickTickRequestOptions): Promise<Response>;
+  requestJson<T>(options: TickTickRequestOptions): Promise<T>;
+  requestBuffer(options: TickTickRequestOptions): Promise<ArrayBuffer>;
+}
+
+export interface TickTickSessionApi {
+  get(): TickTickSerializedSession | null;
+  restore(): Promise<TickTickSerializedSession | null>;
+  set(session: TickTickSerializedSession | null): Promise<void>;
+  clear(): Promise<void>;
+  validate(): Promise<boolean>;
+  keepAlive(): Promise<void>;
+  login(credentials?: TickTickCredentials): Promise<TickTickSerializedSession>;
+}
+
 export interface TickTickClientOptions {
   service?: TickTickServiceName;
   credentials?: TickTickCredentials;
@@ -130,6 +156,11 @@ export interface TickTickUserProfile {
   userId?: string;
   inboxId?: string;
   [key: string]: unknown;
+}
+
+export interface TickTickDeleteResult {
+  id: string;
+  deleted: true;
 }
 
 export interface TickTickCountdown {

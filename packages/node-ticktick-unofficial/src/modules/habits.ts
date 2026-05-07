@@ -8,6 +8,7 @@ import {
   parseTickTickHabitStatus,
 } from "../semantic.js";
 import type {
+  TickTickDeleteResult,
   TickTickHabit,
   TickTickHabitBatchRequest,
   TickTickHabitBatchResponse,
@@ -44,7 +45,7 @@ export class TickTickHabitsApi {
     });
   }
 
-  async create(input: TickTickHabitDraft): Promise<TickTickHabitBatchResponse> {
+  async create(input: TickTickHabitDraft): Promise<TickTickHabit> {
     const timestamp = new Date();
     const habit: TickTickHabit = {
       color: input.color ?? "",
@@ -75,17 +76,28 @@ export class TickTickHabitsApi {
       archivedTime: input.archivedTime ?? null,
     };
 
-    return this.batch({ add: [habit] });
+    const response = await this.batch({ add: [habit] });
+    return {
+      ...habit,
+      etag: response.id2etag?.[habit.id] ?? habit.etag,
+    };
   }
 
-  update(habits: TickTickHabit | TickTickHabit[]): Promise<TickTickHabitBatchResponse> {
+  async update(habit: TickTickHabit): Promise<TickTickHabit>;
+  async update(habits: TickTickHabit[]): Promise<TickTickHabit[]>;
+  async update(habits: TickTickHabit | TickTickHabit[]): Promise<TickTickHabit | TickTickHabit[]> {
     const updates = Array.isArray(habits) ? habits : [habits];
-    return this.batch({ update: updates });
+    await this.batch({ update: updates });
+    return habits;
   }
 
-  delete(habitIds: string | string[]): Promise<TickTickHabitBatchResponse> {
+  async delete(habitId: string): Promise<TickTickDeleteResult>;
+  async delete(habitIds: string[]): Promise<TickTickDeleteResult[]>;
+  async delete(habitIds: string | string[]): Promise<TickTickDeleteResult | TickTickDeleteResult[]> {
     const ids = Array.isArray(habitIds) ? habitIds : [habitIds];
-    return this.batch({ delete: ids });
+    await this.batch({ delete: ids });
+    const result = ids.map((id) => ({ id, deleted: true }) satisfies TickTickDeleteResult);
+    return Array.isArray(habitIds) ? result : result[0]!;
   }
 
   getWeekCurrentStatistics(): Promise<Record<string, { totalHabitCount: number; completedHabitCount: number }>> {

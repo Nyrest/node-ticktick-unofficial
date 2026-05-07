@@ -1,9 +1,11 @@
 import { toApiDateTime } from "../internal/dates.js";
 import { createObjectId } from "../internal/ids.js";
 import type { TickTickClient } from "../client.js";
+import { TickTickApiError, TickTickNotFoundError } from "../errors.js";
 import { TickTickTaskPriorities, TickTickTaskStatuses, parseTickTickTaskPriority, parseTickTickTaskStatus } from "../semantic.js";
 import type {
   TickTickCompletedTaskOptions,
+  TickTickDeleteResult,
   TickTickTask,
   TickTickTaskBatchRequest,
   TickTickTaskBatchResponse,
@@ -28,7 +30,7 @@ export class TickTickTasksApi {
     return response.syncTaskBean?.update ?? [];
   }
 
-  async getById(taskId: string, options: { includeCompleted?: boolean } = {}): Promise<TickTickTask | null> {
+  async get(taskId: string, options: { includeCompleted?: boolean } = {}): Promise<TickTickTask> {
     try {
       const task = await this.client.requestJson<TickTickTask>({
         path: `/api/v2/task/${taskId}`,
@@ -37,16 +39,20 @@ export class TickTickTasksApi {
       if (task && task.id === taskId) {
         const isClosed = task.status === TickTickTaskStatuses.completed || task.status === TickTickTaskStatuses.wontDo;
         if (isClosed && options.includeCompleted === false) {
-          return null;
+          throw new TickTickNotFoundError("Task", taskId);
         }
 
         return task;
       }
     } catch (error) {
-      // Task not found or API error
+      if (error instanceof TickTickApiError && error.status === 404) {
+        throw new TickTickNotFoundError("Task", taskId, { cause: error });
+      }
+
+      throw error;
     }
 
-    return null;
+    throw new TickTickNotFoundError("Task", taskId);
   }
 
   listCompleted(options: TickTickCompletedTaskOptions = {}): Promise<TickTickTask[]> {
@@ -191,7 +197,13 @@ export class TickTickTasksApi {
     };
 
     await this.update(movedTask);
-    return (await this.getById(taskId)) ?? movedTask;
+    return this.get(taskId).catch((error: unknown) => {
+      if (error instanceof TickTickNotFoundError) {
+        return movedTask;
+      }
+
+      throw error;
+    });
   }
 
   async setStatus(change: TickTickTaskStatusMutation): Promise<TickTickTask>;
@@ -210,27 +222,22 @@ export class TickTickTasksApi {
     return updates;
   }
 
-  async delete(taskId: string): Promise<TickTickTask>;
-  async delete(taskIds: string[]): Promise<TickTickTask[]>;
-  async delete(taskIds: string | string[]): Promise<TickTickTask | TickTickTask[]> {
+  async delete(taskId: string): Promise<TickTickDeleteResult>;
+  async delete(taskIds: string[]): Promise<TickTickDeleteResult[]>;
+  async delete(taskIds: string | string[]): Promise<TickTickDeleteResult | TickTickDeleteResult[]> {
     if (!Array.isArray(taskIds)) {
       const task = await this.#buildDeletedTask(taskIds);
       await this.batch({ update: [task] });
-      return task;
+      return { id: taskIds, deleted: true };
     }
 
     const updates = await Promise.all(taskIds.map((taskId) => this.#buildDeletedTask(taskId)));
     await this.batch({ update: updates });
-    return updates;
+    return taskIds.map((id) => ({ id, deleted: true }));
   }
 
   async #requireTask(taskId: string, options: { includeCompleted?: boolean } = {}): Promise<TickTickTask> {
-    const task = await this.getById(taskId, options);
-    if (!task) {
-      throw new Error(`Task ${taskId} was not found.`);
-    }
-
-    return task;
+    return this.get(taskId, options);
   }
 
   #currentUserId(): number | undefined {

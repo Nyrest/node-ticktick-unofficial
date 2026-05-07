@@ -26,10 +26,10 @@
   - OpenAPI spec for the API app
 
 - 🧑‍💻 **Developer-friendly** design
-  - Intuitive API with high-level modules
+  - Resource-oriented SDK with high-level modules
   - Comprehensive documentation and examples
   - Easy local development with hot reload
-  - Auto session management renewal
+  - Explicit `client.session` and `client.raw` namespaces
 
 ## Supported Modules
 
@@ -45,7 +45,8 @@ The shared `node-ticktick-unofficial` library currently exposes these supported 
 | `client.focus` | Focus session state and history | Start, pause, resume, finish, stop, and inspect focus sessions |
 | `client.pomodoros` | Alias for focus controls | Use the same focus functionality with pomodoro-oriented naming |
 | `client.statistics` | General and ranking statistics | Read account-level stats, rankings, and task-related statistics |
-| `client.requestJson()` / `client.request()` / `client.requestBuffer()` | Raw endpoint access | Reach lower-level private endpoints when the higher-level modules are not enough |
+| `client.session` | Session lifecycle | Restore, validate, refresh, clear, and inspect the active session |
+| `client.raw.requestJson()` / `client.raw.request()` / `client.raw.requestBuffer()` | Raw endpoint access | Reach lower-level private endpoints when the higher-level modules are not enough |
 
 TickTick is the default target. Dida365 is supported with the same overall shape.
 
@@ -122,6 +123,9 @@ const client = await TickTickClient.create({
 });
 
 const tasks = await client.tasks.list();
+const task = await client.tasks.create({ title: "Write release notes" });
+const sameTask = await client.tasks.get(task.id);
+
 console.log(tasks.length);
 ```
 

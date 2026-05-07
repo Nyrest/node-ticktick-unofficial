@@ -14,6 +14,7 @@ import type {
   TickTickCountdownBatchRequest,
   TickTickCountdownBatchResponse,
   TickTickCountdownDraft,
+  TickTickDeleteResult,
 } from "../types.js";
 
 export class TickTickCountdownsApi {
@@ -25,11 +26,6 @@ export class TickTickCountdownsApi {
     });
 
     return response.countdowns ?? [];
-  }
-
-  async getById(countdownId: string): Promise<TickTickCountdown | null> {
-    const countdowns = await this.list();
-    return countdowns.find((countdown) => countdown.id === countdownId) ?? null;
   }
 
   batch(payload: TickTickCountdownBatchRequest): Promise<TickTickCountdownBatchResponse> {
@@ -44,20 +40,31 @@ export class TickTickCountdownsApi {
     });
   }
 
-  create(input: TickTickCountdownDraft): Promise<TickTickCountdownBatchResponse> {
-    return this.batch({ add: [this.#buildCreatePayload(input)] });
+  async create(input: TickTickCountdownDraft): Promise<TickTickCountdown> {
+    const countdown = this.#buildCreatePayload(input);
+    const response = await this.batch({ add: [countdown] });
+    return {
+      ...countdown,
+      etag: response.id2etag?.[countdown.id] ?? countdown.etag,
+    };
   }
 
-  update(countdowns: TickTickCountdown | TickTickCountdown[]): Promise<TickTickCountdownBatchResponse> {
-    return this.batch({
+  async update(countdown: TickTickCountdown): Promise<TickTickCountdown>;
+  async update(countdowns: TickTickCountdown[]): Promise<TickTickCountdown[]>;
+  async update(countdowns: TickTickCountdown | TickTickCountdown[]): Promise<TickTickCountdown | TickTickCountdown[]> {
+    await this.batch({
       update: Array.isArray(countdowns) ? countdowns : [countdowns],
     });
+    return countdowns;
   }
 
-  delete(countdownIds: string | string[]): Promise<TickTickCountdownBatchResponse> {
-    return this.batch({
-      delete: Array.isArray(countdownIds) ? countdownIds : [countdownIds],
-    });
+  async delete(countdownId: string): Promise<TickTickDeleteResult>;
+  async delete(countdownIds: string[]): Promise<TickTickDeleteResult[]>;
+  async delete(countdownIds: string | string[]): Promise<TickTickDeleteResult | TickTickDeleteResult[]> {
+    const ids = Array.isArray(countdownIds) ? countdownIds : [countdownIds];
+    await this.batch({ delete: ids });
+    const result = ids.map((id) => ({ id, deleted: true }) satisfies TickTickDeleteResult);
+    return Array.isArray(countdownIds) ? result : result[0]!;
   }
 
   #buildCreatePayload(input: TickTickCountdownDraft): TickTickCountdown {

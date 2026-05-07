@@ -1,4 +1,4 @@
-import { TickTickAuthError, TickTickApiError } from "./errors.js";
+import { TickTickAuthError, TickTickApiError, TickTickRateLimitError } from "./errors.js";
 import { getCookieValue, getSetCookieHeaders, mergeCookies, parseSetCookieHeaders, serializeCookies } from "./internal/cookies.js";
 import { createDeviceId, createTraceId } from "./internal/ids.js";
 import { TickTickFocusApi } from "./modules/focus.js";
@@ -14,20 +14,13 @@ import type {
   TickTickCredentials,
   TickTickDeviceDescriptor,
   TickTickPasswordLoginResponse,
+  TickTickRawApi,
+  TickTickRequestOptions,
   TickTickSerializedSession,
+  TickTickSessionApi,
   TickTickServiceConfig,
   TickTickServiceName,
 } from "./types.js";
-
-interface TickTickRequestOptions {
-  path: string;
-  method?: string;
-  headers?: HeadersInit;
-  json?: unknown;
-  auth?: "required" | "none";
-  base?: "api" | "ms" | "absolute";
-  retryAuth?: boolean;
-}
 
 const SERVICE_CONFIGS: Record<TickTickServiceName, TickTickServiceConfig> = {
   ticktick: {
@@ -64,6 +57,8 @@ export class TickTickClient {
   readonly pomodoros: TickTickFocusApi;
   readonly statistics: TickTickStatisticsApi;
   readonly user: TickTickUserApi;
+  readonly raw: TickTickRawApi;
+  readonly session: TickTickSessionApi;
 
   #fetch: typeof globalThis.fetch;
   #credentials?: TickTickCredentials;
@@ -109,6 +104,20 @@ export class TickTickClient {
     this.pomodoros = this.focus;
     this.statistics = new TickTickStatisticsApi(this);
     this.user = new TickTickUserApi(this);
+    this.raw = {
+      request: (options) => this.request(options),
+      requestJson: (options) => this.requestJson(options),
+      requestBuffer: (options) => this.requestBuffer(options),
+    };
+    this.session = {
+      get: () => this.getSession(),
+      restore: () => this.restoreSession(),
+      set: (session) => this.setSession(session),
+      clear: () => this.clearSession(),
+      validate: () => this.validateSession(),
+      keepAlive: () => this.keepAlive(),
+      login: (credentials) => this.login(credentials),
+    };
   }
 
   static async create(options: TickTickClientOptions = {}): Promise<TickTickClient> {
@@ -263,12 +272,18 @@ export class TickTickClient {
       return this.#requestInternal(options, true);
     }
 
-    throw new TickTickApiError(`TickTick request failed with status ${response.status}`, {
+    const details = {
       url,
       method: options.method ?? (options.json === undefined ? "GET" : "POST"),
       status: response.status,
       responseBody,
-    });
+    };
+
+    if (response.status === 429) {
+      throw new TickTickRateLimitError(`TickTick request was rate limited with status ${response.status}`, details);
+    }
+
+    throw new TickTickApiError(`TickTick request failed with status ${response.status}`, details);
   }
 
   async #ensureSession(options: { allowLogin: boolean }): Promise<TickTickSerializedSession | null> {

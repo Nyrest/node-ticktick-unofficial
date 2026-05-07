@@ -12,6 +12,7 @@ import {
   CountdownDraftSchema,
   CountdownSchema,
   DateRangeParamsSchema,
+  DeleteResultSchema,
   ErrorSchema,
   FocusActionSchema,
   FocusOverviewSchema,
@@ -253,6 +254,22 @@ export function createApp(
       },
     )
     .get(
+      "/projects/:projectId/tasks",
+      async function getProjectTasks({ params }) {
+        return (await ticktick.getClient()).projects.get(params.projectId);
+      },
+      {
+        params: t.Object({
+          projectId: t.String(),
+        }),
+        detail: protectedDetail(config, "Projects", "Get project tasks", "Returns active tasks for one project using TickTick's direct project tasks endpoint."),
+        response: {
+          200: t.Array(TaskSchema),
+          401: ErrorSchema,
+        },
+      },
+    )
+    .get(
       "/projects/:projectId/columns",
       async function listColumns({ params }) {
         return (await ticktick.getClient()).projects.listColumns(params.projectId);
@@ -277,7 +294,7 @@ export function createApp(
         body: ProjectCreateSchema,
         detail: protectedDetail(config, "Projects", "Create project", "Creates a new project list."),
         response: {
-          200: ProjectBatchResponseSchema,
+          200: ProjectSchema,
           401: ErrorSchema,
         },
       },
@@ -311,7 +328,7 @@ export function createApp(
         body: ProjectUpdateSchema,
         detail: protectedDetail(config, "Projects", "Update project", "Updates project metadata by id."),
         response: {
-          200: ProjectBatchResponseSchema,
+          200: ProjectUpdateSchema,
           401: ErrorSchema,
         },
       },
@@ -327,7 +344,7 @@ export function createApp(
         }),
         detail: protectedDetail(config, "Projects", "Delete project", "Deletes a project by id."),
         response: {
-          200: ProjectBatchResponseSchema,
+          200: DeleteResultSchema,
           401: ErrorSchema,
         },
       },
@@ -371,7 +388,7 @@ export function createApp(
         body: t.Union([TagSchema, t.Array(TagSchema)]),
         detail: protectedDetail(config, "Tags", "Create tag or tags", "Creates one or multiple tags."),
         response: {
-          200: TagBatchResponseSchema,
+          200: t.Union([TagSchema, t.Array(TagSchema)]),
           401: ErrorSchema,
         },
       },
@@ -391,7 +408,7 @@ export function createApp(
         body: t.Partial(TagSchema),
         detail: protectedDetail(config, "Tags", "Update tag", "Updates a single tag by its name."),
         response: {
-          200: TagBatchResponseSchema,
+          200: TagSchema,
           401: ErrorSchema,
         },
       },
@@ -459,7 +476,7 @@ export function createApp(
         }),
         detail: protectedDetail(config, "Tags", "Delete tag", "Deletes a tag by name."),
         response: {
-          200: TagBatchResponseSchema,
+          200: DeleteResultSchema,
           401: ErrorSchema,
         },
       },
@@ -530,15 +547,15 @@ export function createApp(
     .get(
       "/tasks/:taskId",
       async function getTaskById({ params }) {
-        return (await ticktick.getClient()).tasks.getById(params.taskId);
+        return (await ticktick.getClient()).tasks.get(params.taskId);
       },
       {
         params: t.Object({
           taskId: t.String(),
         }),
-        detail: protectedDetail(config, "Tasks", "Get task by id", "Returns one task, searching completed pages when necessary."),
+        detail: protectedDetail(config, "Tasks", "Get task by id", "Returns one task using the direct TickTick task endpoint."),
         response: {
-          200: t.Union([TaskSchema, t.Null()]),
+          200: TaskSchema,
           401: ErrorSchema,
         },
       },
@@ -684,7 +701,7 @@ export function createApp(
         }),
         detail: protectedDetail(config, "Tasks", "Soft-delete task", "Marks a task as deleted using TickTick trash semantics."),
         response: {
-          200: TaskSchema,
+          200: DeleteResultSchema,
           401: ErrorSchema,
         },
       },
@@ -698,7 +715,7 @@ export function createApp(
         body: DeleteManySchema,
         detail: protectedDetail(config, "Tasks", "Soft-delete multiple tasks", "Marks multiple tasks as deleted."),
         response: {
-          200: t.Array(TaskSchema),
+          200: t.Array(DeleteResultSchema),
           401: ErrorSchema,
         },
       },
@@ -716,22 +733,6 @@ export function createApp(
         },
       },
     )
-    .get(
-      "/countdowns/:countdownId",
-      async function getCountdownById({ params }) {
-        return (await ticktick.getClient()).countdowns.getById(params.countdownId);
-      },
-      {
-        params: t.Object({
-          countdownId: t.String(),
-        }),
-        detail: protectedDetail(config, "Countdowns", "Get countdown by id", "Looks up a single countdown by its id."),
-        response: {
-          200: t.Union([CountdownSchema, t.Null()]),
-          401: ErrorSchema,
-        },
-      },
-    )
     .post(
       "/countdowns",
       async function createCountdown({ body }) {
@@ -741,7 +742,7 @@ export function createApp(
         body: CountdownDraftSchema,
         detail: protectedDetail(config, "Countdowns", "Create countdown", "Creates a new countdown."),
         response: {
-          200: CountdownBatchResponseSchema,
+          200: CountdownSchema,
           401: ErrorSchema,
         },
       },
@@ -774,7 +775,7 @@ export function createApp(
         body: CountdownMutationSchema,
         detail: protectedDetail(config, "Countdowns", "Update countdowns", "Updates one or more countdowns."),
         response: {
-          200: CountdownBatchResponseSchema,
+          200: CountdownMutationSchema,
           401: ErrorSchema,
         },
       },
@@ -790,7 +791,7 @@ export function createApp(
         }),
         detail: protectedDetail(config, "Countdowns", "Delete countdown", "Deletes a countdown by id."),
         response: {
-          200: CountdownBatchResponseSchema,
+          200: DeleteResultSchema,
           401: ErrorSchema,
         },
       },
@@ -804,7 +805,7 @@ export function createApp(
         body: DeleteManySchema,
         detail: protectedDetail(config, "Countdowns", "Delete multiple countdowns", "Deletes multiple countdowns."),
         response: {
-          200: CountdownBatchResponseSchema,
+          200: t.Array(DeleteResultSchema),
           401: ErrorSchema,
         },
       },
@@ -873,7 +874,7 @@ export function createApp(
         body: HabitDraftSchema,
         detail: protectedDetail(config, "Habits", "Create habit", "Creates a new habit."),
         response: {
-          200: HabitBatchResponseSchema,
+          200: HabitSchema,
           401: ErrorSchema,
         },
       },
@@ -903,7 +904,7 @@ export function createApp(
         }),
         detail: protectedDetail(config, "Habits", "Delete habit", "Deletes a habit by id."),
         response: {
-          200: HabitBatchResponseSchema,
+          200: DeleteResultSchema,
           401: ErrorSchema,
         },
       },

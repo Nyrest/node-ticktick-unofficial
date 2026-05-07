@@ -48,6 +48,36 @@ const tasks = await client.tasks.list();
 console.log(profile.username, tasks.length);
 ```
 
+## API Design
+
+The recommended API is resource-oriented:
+
+```ts
+const task = await client.tasks.create({
+  title: "Prepare weekly report",
+  priority: "high",
+});
+
+const sameTask = await client.tasks.get(task.id); // calls GET /api/v2/task/{id}
+
+await client.tasks.update({
+  ...sameTask,
+  title: "Prepare weekly report draft",
+});
+
+await client.tasks.delete(task.id); // { id, deleted: true }
+```
+
+Resource modules follow the same shape where the upstream API allows it:
+
+- `list()` returns resource arrays.
+- `tasks.get(id)` calls `GET /api/v2/task/{id}`.
+- `projects.get(id)` calls `GET /api/v2/project/{id}/tasks` and returns that project's active tasks.
+- `create(input)` returns the created resource.
+- `update(input)` returns the updated resource input.
+- `delete(id)` returns `{ id, deleted: true }`.
+- `batch(payload)` is kept for advanced callers who need the raw TickTick batch response.
+
 ## Session Handling
 
 The client is designed to be practical for long-running use:
@@ -61,12 +91,14 @@ The client is designed to be practical for long-running use:
 Example:
 
 ```ts
-await client.keepAlive();
+await client.session.keepAlive();
 
-if (!(await client.validateSession())) {
-  await client.login();
+if (!(await client.session.validate())) {
+  await client.session.login();
 }
 ```
+
+The older top-level session methods, such as `client.keepAlive()` and `client.validateSession()`, remain available for compatibility. New code should prefer `client.session`.
 
 ## Dida365
 
@@ -95,7 +127,19 @@ const client = await TickTickClient.create({
 | `client.focus` | Focus session state and history | Control a running focus session and inspect related history |
 | `client.pomodoros` | Alias for focus controls | Use the same focus functionality with pomodoro-oriented naming |
 | `client.statistics` | General and ranking statistics | Read account-wide stats, rankings, and task statistics |
-| `client.requestJson()` / `client.request()` / `client.requestBuffer()` | Raw endpoint access | Call lower-level endpoints directly when you need something not yet wrapped |
+| `client.raw.requestJson()` / `client.raw.request()` / `client.raw.requestBuffer()` | Raw endpoint access | Call lower-level endpoints directly when you need something not yet wrapped |
+
+## Raw Endpoint Access
+
+Use `client.raw` when you need an endpoint that is not wrapped yet:
+
+```ts
+const payload = await client.raw.requestJson<Record<string, unknown>>({
+  path: "/api/v2/unknown-endpoint",
+});
+```
+
+The older top-level `client.requestJson()`, `client.request()`, and `client.requestBuffer()` methods remain available for compatibility. New code should prefer `client.raw`.
 
 ## Notes
 

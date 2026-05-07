@@ -2,9 +2,11 @@ import { createObjectId } from "../internal/ids.js";
 import type { TickTickClient } from "../client.js";
 import type {
   TickTickColumn,
+  TickTickDeleteResult,
   TickTickProjectBatchRequest,
   TickTickProjectBatchResponse,
   TickTickProjectProfile,
+  TickTickTask,
 } from "../types.js";
 
 type TickTickProjectCreateInput = NonNullable<TickTickProjectBatchRequest["add"]>[number];
@@ -19,6 +21,12 @@ export class TickTickProjectsApi {
     });
   }
 
+  get(projectId: string): Promise<TickTickTask[]> {
+    return this.client.requestJson<TickTickTask[]>({
+      path: `/api/v2/project/${projectId}/tasks`,
+    });
+  }
+
   async listColumns(projectId?: string): Promise<TickTickColumn[]> {
     const response = await this.client.requestJson<{ update?: TickTickColumn[] }>({
       path: "/api/v2/column?from=0",
@@ -26,11 +34,6 @@ export class TickTickProjectsApi {
 
     const columns = response.update ?? [];
     return projectId ? columns.filter((column) => column.projectId === projectId) : columns;
-  }
-
-  async getById(projectId: string): Promise<TickTickProjectProfile | null> {
-    const projects = await this.list();
-    return projects.find((project) => project.id === projectId) ?? null;
   }
 
   batch(payload: TickTickProjectBatchRequest): Promise<TickTickProjectBatchResponse> {
@@ -45,11 +48,12 @@ export class TickTickProjectsApi {
     });
   }
 
-  create(project: TickTickProjectCreateInput): Promise<TickTickProjectBatchResponse> {
+  async create(project: TickTickProjectCreateInput): Promise<TickTickProjectProfile> {
+    const projectId = project.id ?? createObjectId();
     const payload: TickTickProjectCreateInput = {
       color: project.color ?? undefined,
       groupId: project.groupId ?? undefined,
-      id: project.id ?? createObjectId(),
+      id: projectId,
       inAll: project.inAll ?? true,
       isOwner: project.isOwner ?? true,
       kind: project.kind ?? "TASK",
@@ -65,15 +69,25 @@ export class TickTickProjectsApi {
       viewMode: project.viewMode ?? "list",
     };
 
-    return this.batch({ add: [payload] });
+    const response = await this.batch({ add: [payload] });
+    return {
+      ...payload,
+      id: projectId,
+      etag: response.id2etag?.[projectId],
+    };
   }
 
-  update(project: TickTickProjectUpdateInput): Promise<TickTickProjectBatchResponse> {
-    return this.batch({ update: [project] });
+  async update(project: TickTickProjectUpdateInput): Promise<TickTickProjectUpdateInput> {
+    await this.batch({ update: [project] });
+    return project;
   }
 
-  delete(projectIds: string | string[]): Promise<TickTickProjectBatchResponse> {
+  async delete(projectId: string): Promise<TickTickDeleteResult>;
+  async delete(projectIds: string[]): Promise<TickTickDeleteResult[]>;
+  async delete(projectIds: string | string[]): Promise<TickTickDeleteResult | TickTickDeleteResult[]> {
     const ids = Array.isArray(projectIds) ? projectIds : [projectIds];
-    return this.batch({ delete: ids });
+    await this.batch({ delete: ids });
+    const result = ids.map((id) => ({ id, deleted: true }) satisfies TickTickDeleteResult);
+    return Array.isArray(projectIds) ? result : result[0]!;
   }
 }
