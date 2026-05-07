@@ -21,7 +21,12 @@ export class TickTickProjectsApi {
     });
   }
 
-  get(projectId: string): Promise<TickTickTask[]> {
+  async findById(projectId: string): Promise<TickTickProjectProfile | null> {
+    const projects = await this.list();
+    return projects.find((project) => project.id === projectId) ?? null;
+  }
+
+  listTasks(projectId: string): Promise<TickTickTask[]> {
     return this.client.requestJson<TickTickTask[]>({
       path: `/api/v2/project/${projectId}/tasks`,
     });
@@ -48,7 +53,31 @@ export class TickTickProjectsApi {
     });
   }
 
-  async create(project: TickTickProjectCreateInput): Promise<TickTickProjectProfile> {
+  async create(project: TickTickProjectCreateInput): Promise<TickTickProjectProfile>;
+  async create(projects: TickTickProjectCreateInput[]): Promise<TickTickProjectProfile[]>;
+  async create(
+    project: TickTickProjectCreateInput | TickTickProjectCreateInput[],
+  ): Promise<TickTickProjectProfile | TickTickProjectProfile[]> {
+    const payloads = (Array.isArray(project) ? project : [project]).map((entry) => this.#buildCreatePayload(entry));
+    const response = await this.batch({ add: payloads });
+    const result = payloads.map((payload) => ({
+      ...payload,
+      etag: response.id2etag?.[payload.id],
+    }));
+    return Array.isArray(project) ? result : result[0]!;
+  }
+
+  async update(project: TickTickProjectUpdateInput): Promise<TickTickProjectUpdateInput>;
+  async update(projects: TickTickProjectUpdateInput[]): Promise<TickTickProjectUpdateInput[]>;
+  async update(
+    project: TickTickProjectUpdateInput | TickTickProjectUpdateInput[],
+  ): Promise<TickTickProjectUpdateInput | TickTickProjectUpdateInput[]> {
+    const updates = Array.isArray(project) ? project : [project];
+    await this.batch({ update: updates });
+    return project;
+  }
+
+  #buildCreatePayload(project: TickTickProjectCreateInput): TickTickProjectCreateInput & Pick<TickTickProjectProfile, "id"> {
     const projectId = project.id ?? createObjectId();
     const payload: TickTickProjectCreateInput = {
       color: project.color ?? undefined,
@@ -69,17 +98,10 @@ export class TickTickProjectsApi {
       viewMode: project.viewMode ?? "list",
     };
 
-    const response = await this.batch({ add: [payload] });
     return {
       ...payload,
       id: projectId,
-      etag: response.id2etag?.[projectId],
     };
-  }
-
-  async update(project: TickTickProjectUpdateInput): Promise<TickTickProjectUpdateInput> {
-    await this.batch({ update: [project] });
-    return project;
   }
 
   async delete(projectId: string): Promise<TickTickDeleteResult>;

@@ -10,6 +10,7 @@ import type {
   TickTickTaskBatchRequest,
   TickTickTaskBatchResponse,
   TickTickTaskDraft,
+  TickTickTaskGetOptions,
   TickTickTaskProjectMove,
   TickTickTaskStatusMutation,
   TickTickTaskSyncResponse,
@@ -30,10 +31,19 @@ export class TickTickTasksApi {
     return response.syncTaskBean?.update ?? [];
   }
 
-  async get(taskId: string, options: { includeCompleted?: boolean } = {}): Promise<TickTickTask> {
+  async get(taskId: string, options: TickTickTaskGetOptions = {}): Promise<TickTickTask> {
+    const params = new URLSearchParams();
+    if (options.projectId) {
+      params.set("projectId", options.projectId);
+    }
+    if (options.withChildren) {
+      params.set("withChildren", "true");
+    }
+    const query = params.toString();
+
     try {
       const task = await this.client.requestJson<TickTickTask>({
-        path: `/api/v2/task/${taskId}`,
+        path: `/api/v2/task/${taskId}${query ? `?${query}` : ""}`,
       });
 
       if (task && task.id === taskId) {

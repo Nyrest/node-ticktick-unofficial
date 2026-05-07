@@ -148,9 +148,16 @@ export const TagSchema = t.Object(
   { additionalProperties: true },
 );
 
+export const TagUpdateSchema = t.Object(
+  {
+    name: t.String(),
+  },
+  { additionalProperties: true },
+);
+
 export const TagBatchRequestSchema = t.Object({
   add: t.Optional(t.Array(TagSchema)),
-  update: t.Optional(t.Array(TagSchema)),
+  update: t.Optional(t.Array(TagUpdateSchema)),
   delete: t.Optional(t.Array(t.String())),
 });
 
@@ -341,9 +348,16 @@ export const HabitDraftSchema = t.Object(
   { additionalProperties: true },
 );
 
+export const HabitUpdateSchema = t.Object(
+  {
+    id: t.String(),
+  },
+  { additionalProperties: true },
+);
+
 export const HabitBatchRequestSchema = t.Object({
   add: t.Optional(t.Array(HabitSchema)),
-  update: t.Optional(t.Array(HabitSchema)),
+  update: t.Optional(t.Array(HabitUpdateSchema)),
   delete: t.Optional(t.Array(t.String())),
 });
 
@@ -473,9 +487,16 @@ export const CountdownDraftSchema = t.Object(
   { additionalProperties: true },
 );
 
+export const CountdownUpdateSchema = t.Object(
+  {
+    id: t.String(),
+  },
+  { additionalProperties: true },
+);
+
 export const CountdownBatchRequestSchema = t.Object({
   add: t.Optional(t.Array(CountdownSchema)),
-  update: t.Optional(t.Array(CountdownSchema)),
+  update: t.Optional(t.Array(CountdownUpdateSchema)),
   delete: t.Optional(t.Array(t.String())),
 });
 

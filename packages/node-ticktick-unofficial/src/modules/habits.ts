@@ -18,6 +18,7 @@ import type {
   TickTickHabitDraft,
   TickTickHabitCheckinQuery,
   TickTickHabitCheckinQueryResponse,
+  TickTickHabitUpdate,
 } from "../types.js";
 
 export class TickTickHabitsApi {
@@ -27,6 +28,11 @@ export class TickTickHabitsApi {
     return this.client.requestJson<TickTickHabit[]>({
       path: "/api/v2/habits",
     });
+  }
+
+  async findById(habitId: string): Promise<TickTickHabit | null> {
+    const habits = await this.list();
+    return habits.find((habit) => habit.id === habitId) ?? null;
   }
 
   getHabits(): Promise<TickTickHabit[]> {
@@ -45,9 +51,21 @@ export class TickTickHabitsApi {
     });
   }
 
-  async create(input: TickTickHabitDraft): Promise<TickTickHabit> {
+  async create(input: TickTickHabitDraft): Promise<TickTickHabit>;
+  async create(input: TickTickHabitDraft[]): Promise<TickTickHabit[]>;
+  async create(input: TickTickHabitDraft | TickTickHabitDraft[]): Promise<TickTickHabit | TickTickHabit[]> {
+    const habits = (Array.isArray(input) ? input : [input]).map((draft) => this.#buildCreatePayload(draft));
+    const response = await this.batch({ add: habits });
+    const result = habits.map((habit) => ({
+      ...habit,
+      etag: response.id2etag?.[habit.id] ?? habit.etag,
+    }));
+    return Array.isArray(input) ? result : result[0]!;
+  }
+
+  #buildCreatePayload(input: TickTickHabitDraft): TickTickHabit {
     const timestamp = new Date();
-    const habit: TickTickHabit = {
+    return {
       color: input.color ?? "",
       iconRes: input.iconRes ?? "",
       createdTime: toApiDateTime(timestamp) ?? undefined,
@@ -75,17 +93,11 @@ export class TickTickHabitsApi {
       exDates: input.exDates ?? [],
       archivedTime: input.archivedTime ?? null,
     };
-
-    const response = await this.batch({ add: [habit] });
-    return {
-      ...habit,
-      etag: response.id2etag?.[habit.id] ?? habit.etag,
-    };
   }
 
-  async update(habit: TickTickHabit): Promise<TickTickHabit>;
-  async update(habits: TickTickHabit[]): Promise<TickTickHabit[]>;
-  async update(habits: TickTickHabit | TickTickHabit[]): Promise<TickTickHabit | TickTickHabit[]> {
+  async update(habit: TickTickHabitUpdate): Promise<TickTickHabitUpdate>;
+  async update(habits: TickTickHabitUpdate[]): Promise<TickTickHabitUpdate[]>;
+  async update(habits: TickTickHabitUpdate | TickTickHabitUpdate[]): Promise<TickTickHabitUpdate | TickTickHabitUpdate[]> {
     const updates = Array.isArray(habits) ? habits : [habits];
     await this.batch({ update: updates });
     return habits;

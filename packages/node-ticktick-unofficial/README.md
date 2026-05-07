@@ -71,12 +71,15 @@ await client.tasks.delete(task.id); // { id, deleted: true }
 Resource modules follow the same shape where the upstream API allows it:
 
 - `list()` returns resource arrays.
-- `tasks.get(id)` calls `GET /api/v2/task/{id}`.
-- `projects.get(id)` calls `GET /api/v2/project/{id}/tasks` and returns that project's active tasks.
-- `create(input)` returns the created resource.
-- `update(input)` returns the updated resource input.
+- `tasks.get(id, options?)` calls `GET /api/v2/task/{id}`. `projectId` and `withChildren` are passed through when provided.
+- Resources without a direct single-item Web API expose `findById(id)`, which searches the current `list()` result.
+- `projects.listTasks(id)` calls `GET /api/v2/project/{id}/tasks` and returns that project's active tasks.
+- `create(input)` returns the created resource. Modules that support batch creation also accept `create([inputs])` and return a resource array.
+- `update(input)` returns the submitted update input. Modules that support batch updates also accept `update([inputs])` and return an input array.
 - `delete(id)` returns `{ id, deleted: true }`.
 - `batch(payload)` is kept for advanced callers who need the raw TickTick batch response.
+
+Direct `get(id)` is only used when TickTick exposes a real single-item endpoint. List-based lookup is named `findById(id)` so callers can see the cost and freshness tradeoff in the method name.
 
 ## Session Handling
 
@@ -86,7 +89,7 @@ The client is designed to be practical for long-running use:
 - save session data locally
 - restore and validate a saved session later
 - re-login automatically when credentials are available and a saved session is stale
-- keep a valid session alive with `client.keepAlive()`
+- keep a valid session alive with `client.session.keepAlive()`
 
 Example:
 

@@ -199,7 +199,7 @@ export interface TickTickCountdown {
 
 export interface TickTickCountdownBatchRequest {
   add?: TickTickCountdown[];
-  update?: TickTickCountdown[];
+  update?: TickTickCountdownUpdate[];
   delete?: string[];
 }
 
@@ -242,6 +242,8 @@ export interface TickTickCountdownDraft {
   showRemark?: boolean | null;
   preSet?: unknown;
 }
+
+export type TickTickCountdownUpdate = Partial<TickTickCountdown> & Pick<TickTickCountdown, "id">;
 
 export interface TickTickTaskReminder {
   id: string;
@@ -331,7 +333,7 @@ export interface TickTickTag {
 
 export interface TickTickTagBatchRequest {
   add?: TickTickTag[];
-  update?: TickTickTag[];
+  update?: TickTickTagUpdate[];
   delete?: string[];
 }
 
@@ -339,6 +341,8 @@ export interface TickTickTagBatchResponse {
   id2etag?: Record<string, string>;
   id2error?: Record<string, unknown>;
 }
+
+export type TickTickTagUpdate = Partial<TickTickTag> & Pick<TickTickTag, "name">;
 
 export interface TickTickProjectProfile {
   id: string;
@@ -396,6 +400,12 @@ export interface TickTickTaskSyncResponse {
 export interface TickTickCompletedTaskOptions {
   to?: string;
   status?: "Completed" | "Abandoned";
+}
+
+export interface TickTickTaskGetOptions {
+  projectId?: string;
+  includeCompleted?: boolean;
+  withChildren?: boolean;
 }
 
 export interface TickTickTrashResponse {
@@ -501,7 +511,7 @@ export interface TickTickHabitCheckinQuery {
 
 export interface TickTickHabitBatchRequest {
   add?: TickTickHabit[];
-  update?: TickTickHabit[];
+  update?: TickTickHabitUpdate[];
   delete?: string[];
 }
 
@@ -539,6 +549,8 @@ export interface TickTickHabitDraft {
   type?: string;
   unit?: string;
 }
+
+export type TickTickHabitUpdate = Partial<TickTickHabit> & Pick<TickTickHabit, "id">;
 
 export interface TickTickHabitCheckinUpsertInput {
   habitId: string;

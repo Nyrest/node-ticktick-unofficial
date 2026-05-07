@@ -11,6 +11,7 @@ import {
   CountdownBatchResponseSchema,
   CountdownDraftSchema,
   CountdownSchema,
+  CountdownUpdateSchema,
   DateRangeParamsSchema,
   DeleteResultSchema,
   ErrorSchema,
@@ -64,7 +65,7 @@ const UnknownRecord = t.Record(t.String(), t.Any());
 const TaskDraftInputSchema = t.Union([TaskDraftSchema, t.Array(TaskDraftSchema)]);
 const TaskMutationSchema = t.Union([TaskSchema, t.Array(TaskSchema)]);
 const TaskStatusInputSchema = t.Union([TaskStatusMutationSchema, t.Array(TaskStatusMutationSchema)]);
-const CountdownMutationSchema = t.Union([CountdownSchema, t.Array(CountdownSchema)]);
+const CountdownMutationSchema = t.Union([CountdownUpdateSchema, t.Array(CountdownUpdateSchema)]);
 const DeleteManySchema = t.Object({
   ids: t.Array(t.String(), { minItems: 1 }),
 });
@@ -256,7 +257,7 @@ export function createApp(
     .get(
       "/projects/:projectId/tasks",
       async function getProjectTasks({ params }) {
-        return (await ticktick.getClient()).projects.get(params.projectId);
+        return (await ticktick.getClient()).projects.listTasks(params.projectId);
       },
       {
         params: t.Object({

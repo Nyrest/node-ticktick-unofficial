@@ -1,5 +1,11 @@
 import type { TickTickClient } from "../client.js";
-import type { TickTickDeleteResult, TickTickTag, TickTickTagBatchRequest, TickTickTagBatchResponse } from "../types.js";
+import type {
+  TickTickDeleteResult,
+  TickTickTag,
+  TickTickTagBatchRequest,
+  TickTickTagBatchResponse,
+  TickTickTagUpdate,
+} from "../types.js";
 
 export class TickTickTagsApi {
   constructor(private readonly client: TickTickClient) {}
@@ -13,6 +19,11 @@ export class TickTickTagsApi {
       }
       return tag as unknown as TickTickTag;
     });
+  }
+
+  async findById(name: string): Promise<TickTickTag | null> {
+    const tags = await this.list();
+    return tags.find((tag) => tag.name === name) ?? null;
   }
 
   batch(payload: TickTickTagBatchRequest): Promise<TickTickTagBatchResponse> {
@@ -35,9 +46,9 @@ export class TickTickTagsApi {
     return tag;
   }
 
-  async update(tag: TickTickTag): Promise<TickTickTag>;
-  async update(tags: TickTickTag[]): Promise<TickTickTag[]>;
-  async update(tag: TickTickTag | TickTickTag[]): Promise<TickTickTag | TickTickTag[]> {
+  async update(tag: TickTickTagUpdate): Promise<TickTickTagUpdate>;
+  async update(tags: TickTickTagUpdate[]): Promise<TickTickTagUpdate[]>;
+  async update(tag: TickTickTagUpdate | TickTickTagUpdate[]): Promise<TickTickTagUpdate | TickTickTagUpdate[]> {
     const tags = Array.isArray(tag) ? tag : [tag];
     await this.batch({ update: tags });
     return tag;

@@ -14,6 +14,7 @@ import type {
   TickTickCountdownBatchRequest,
   TickTickCountdownBatchResponse,
   TickTickCountdownDraft,
+  TickTickCountdownUpdate,
   TickTickDeleteResult,
 } from "../types.js";
 
@@ -28,6 +29,11 @@ export class TickTickCountdownsApi {
     return response.countdowns ?? [];
   }
 
+  async findById(countdownId: string): Promise<TickTickCountdown | null> {
+    const countdowns = await this.list();
+    return countdowns.find((countdown) => countdown.id === countdownId) ?? null;
+  }
+
   batch(payload: TickTickCountdownBatchRequest): Promise<TickTickCountdownBatchResponse> {
     return this.client.requestJson<TickTickCountdownBatchResponse>({
       path: "/api/v2/countdown/batch",
@@ -40,18 +46,23 @@ export class TickTickCountdownsApi {
     });
   }
 
-  async create(input: TickTickCountdownDraft): Promise<TickTickCountdown> {
-    const countdown = this.#buildCreatePayload(input);
-    const response = await this.batch({ add: [countdown] });
-    return {
+  async create(input: TickTickCountdownDraft): Promise<TickTickCountdown>;
+  async create(input: TickTickCountdownDraft[]): Promise<TickTickCountdown[]>;
+  async create(input: TickTickCountdownDraft | TickTickCountdownDraft[]): Promise<TickTickCountdown | TickTickCountdown[]> {
+    const countdowns = (Array.isArray(input) ? input : [input]).map((draft) => this.#buildCreatePayload(draft));
+    const response = await this.batch({ add: countdowns });
+    const result = countdowns.map((countdown) => ({
       ...countdown,
       etag: response.id2etag?.[countdown.id] ?? countdown.etag,
-    };
+    }));
+    return Array.isArray(input) ? result : result[0]!;
   }
 
-  async update(countdown: TickTickCountdown): Promise<TickTickCountdown>;
-  async update(countdowns: TickTickCountdown[]): Promise<TickTickCountdown[]>;
-  async update(countdowns: TickTickCountdown | TickTickCountdown[]): Promise<TickTickCountdown | TickTickCountdown[]> {
+  async update(countdown: TickTickCountdownUpdate): Promise<TickTickCountdownUpdate>;
+  async update(countdowns: TickTickCountdownUpdate[]): Promise<TickTickCountdownUpdate[]>;
+  async update(
+    countdowns: TickTickCountdownUpdate | TickTickCountdownUpdate[],
+  ): Promise<TickTickCountdownUpdate | TickTickCountdownUpdate[]> {
     await this.batch({
       update: Array.isArray(countdowns) ? countdowns : [countdowns],
     });
